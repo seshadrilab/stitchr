@@ -14,6 +14,7 @@ import sys
 import textwrap
 import datetime
 import warnings
+import PySimpleGUI as sg
 
 # Ensure correct importlib-resources function imported
 if sys.version_info < (3, 9):

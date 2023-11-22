@@ -390,7 +390,7 @@ def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_w
                 used_alleles['c'], specific_args['cdr3'], used_alleles['l'] + '(L)']
 
     # TODO add information to output header if additional 5'/3' sequences specified?
-    return out_bits, stitched_nt, transl_offset
+    return out_bits, stitched_nt, transl_offset, done
 
 
 gene_types = list(fxn.regions.values())
