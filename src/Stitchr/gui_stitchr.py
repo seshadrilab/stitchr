@@ -13,6 +13,7 @@ import os
 from . import stitchrfunctions as fxn
 from . import stitchr as st
 from . import thimble as th
+from . import seqdisplay as sd
 import collections as coll
 import warnings
 
@@ -466,7 +467,7 @@ def main():
                 seamless = True
             else:
                 seamless = False
-            regions = []
+            parts = []
             # Then stitch each individual chain...
             for ref_chain in ['TR1', 'TR2']:
                 chain = convert_chains[receptor][ref_chain]
@@ -528,12 +529,12 @@ def main():
                             outputs[ref_chain + '_stitched'], \
                             outputs[ref_chain + '_offset'], region = st.stitch(tcr_bits, tcr_dat, functionality,
                                                                        partial, codons, 3, preferred)
-
+                            
                             outputs[ref_chain + '_out_str'] = '|'.join(outputs[ref_chain + '_out_list'])
                             outputs[ref_chain + '_fasta'] = fxn.fastafy('nt|' + outputs[ref_chain + '_out_str'],
                                                                         outputs[ref_chain + '_stitched'])
                             window[ref_chain + '_out'].update(outputs[ref_chain + '_fasta'])
-                            regions.append(region)
+                            parts.append(region)
                         except Exception as message:
                             warning_msgs[ref_chain + '_out'] = str(message)
 
@@ -573,7 +574,6 @@ def main():
                                                                 "but not provided")
 
                             outputs['linker_seq'] = fxn.get_linker_seq(outputs['linker'], linkers)
-
                             outputs['linked'] = outputs['TR' + tr1 + '_stitched'] + \
                                                 outputs['linker_seq'] + \
                                                 outputs['TR' + tr2 + '_stitched']
@@ -599,7 +599,7 @@ def main():
                     window['linked_log'].update(warning_msgs['linked_out'])
 
             # Re-enable stitchr button once completed
-            fxn.display(outputs['linked'], regions)
+            sd.display(outputs['linked'], parts, outputs['linker_seq'])
             window['Run Stitchr'].update(disabled=False)
 
         elif event == 'Export output':

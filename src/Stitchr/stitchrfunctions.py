@@ -882,65 +882,6 @@ def find_j_overlap(nt_cdr3, j_germline):
     return j_germline[index_longest + len(longest_overlap):]
 
 
-def get_indexes(seq, chains):
-    parts = []
-    for chain in chains:
-        for query in chain:
-            parts.append(chain[query])
-    index1s = []
-    index2s = []
-    for part in parts:
-        if part in seq:
-            index = seq.index(part)
-            index1s.append(f'1.{index}')
-            index2s.append(f'1.{index + len(part)}')
-    indexes = list(zip(index1s, index2s))
-    return(indexes)
-
-
-def display(seq, parts):
-    indexes = get_indexes(seq, parts)
-
-    sg.theme('DarkBlue3')
-    font1 = ('Courier New', 10)
-    font2 = ('Courier New', 10, 'bold')
-    sg.set_options(font=font1)
-
-    layout = [
-        [sg.Multiline(seq, size=(100, 20), key='-Multiline')],
-        [sg.Push(), sg.Button('Highlight'), sg.Button('Exit')],
-    ]
-
-    window = sg.Window('NT Output', layout, finalize=True)
-    multiline = window['-Multiline']
-    widget = multiline.Widget
-    # widget.tag_config('HIGHLIGHT', foreground=multiline.BackgroundColor, background=multiline.TextColor, font=font2)
-    while True:
-        event, values = window.read()
-        x = 0
-        if event in (sg.WIN_CLOSED, 'Exit'):
-            break
-        elif event == 'Highlight':
-            for index1, index2 in indexes:
-                    if x == 0:
-                        widget.tag_config('HIGHLIGHT', foreground='white', background='red', font=font2)
-                        widget.tag_add('HIGHLIGHT', index1, index2)
-                    if x == 1:
-                        widget.tag_config('BLUE', foreground='white', background='blue', font=font2)
-                        widget.tag_add('BLUE', index1, index2)
-                    if x == 2:
-                        widget.tag_config('PURPLE', foreground='white', background='purple', font=font2)
-                        widget.tag_add('PURPLE', index1, index2)
-                    x+=1
-            window['-Multiline'].update(disabled=True)
-        elif event == 'Remove':
-            for index1, index2 in indexes:
-                widget.tag_remove('HIGHLIGHT', index1, index2)
-            window['Highlight'].update(disabled=False)
-
-    window.close()
-
-
 def main():
     print("Please use the appropriate 'stitchr', 'thimble', 'gui_stitchr' or 'stitchrdl' command.")
 

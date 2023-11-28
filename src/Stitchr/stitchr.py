@@ -366,6 +366,7 @@ def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_w
         else:
             non_templated_aa = specific_args['cdr3'][cdr3_n_offset:cdr3_n_offset+cdr3_c_end]
             non_templated_nt = fxn.rev_translate(non_templated_aa, codon_dict)
+        done['cdr3'] = non_templated_nt
 
         # Then finally stitch all that info together and output!
         stitched_nt = n_term_nt_trimmed + non_templated_nt + c_term_nt_trimmed
