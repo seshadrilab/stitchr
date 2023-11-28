@@ -529,7 +529,7 @@ def main():
                             outputs[ref_chain + '_stitched'], \
                             outputs[ref_chain + '_offset'], region = st.stitch(tcr_bits, tcr_dat, functionality,
                                                                        partial, codons, 3, preferred)
-                            
+
                             outputs[ref_chain + '_out_str'] = '|'.join(outputs[ref_chain + '_out_list'])
                             outputs[ref_chain + '_fasta'] = fxn.fastafy('nt|' + outputs[ref_chain + '_out_str'],
                                                                         outputs[ref_chain + '_stitched'])
@@ -599,7 +599,7 @@ def main():
                     window['linked_log'].update(warning_msgs['linked_out'])
 
             # Re-enable stitchr button once completed
-            sd.display(outputs['linked'], parts, outputs['linker_seq'])
+            sd.display(fxn.translate_nt(outputs['linked']), parts, fxn.translate_nt(outputs['linker_seq']))
             window['Run Stitchr'].update(disabled=False)
 
         elif event == 'Export output':

@@ -65,12 +65,6 @@ def display(seq, parts, linker):
                     if "_cdr3" in name:
                         widget.tag_config('BLACK', foreground='white', background='black', font=font2)
                         widget.tag_add('BLACK', index1, index2)
-                    elif "_c" in name:
-                        widget.tag_config('RED', foreground='white', background='red', font=font2)
-                        widget.tag_add('RED', index1, index2)
-                    elif "_v" in name:
-                        widget.tag_config('BLUE', foreground='white', background='blue', font=font2)
-                        widget.tag_add('BLUE', index1, index2)
                     elif "_l" in name:
                         widget.tag_config('PURPLE', foreground='white', background='purple', font=font2)
                         widget.tag_add('PURPLE', index1, index2)
