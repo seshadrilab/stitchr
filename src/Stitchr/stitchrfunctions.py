@@ -917,11 +917,12 @@ def wobble(sequence, sites, enzymes):
     """
     for i in sites:
         while len(sites[i]) > 0:
-            r_index = sites[i][0]
+            r_index = sites[i][0] #This is the index at which the enzyme would cut, we need to -1 to get the actual start of sequence, and then -1 again to get the 0 index version
             site = i.site
             site_len = len(site)
             if (site_len % 3) != 0:
                 site_len += (3 - (site_len % 3))
+                site = sequence[r_index -2: r_index -2 + site_len
             seq_len = len(sequence[:r_index-2])
             if (seq_len % 3) == 0:
                 site = sequence[r_index-2:r_index-2+site_len]
