@@ -373,7 +373,6 @@ def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_w
     # Constitutive call to a restriction site checker
     enzymes = ['BamHI', 'SalI']
     sites = fxn.check_restricts(stitched_nt, enzymes)
-    print(ref_chain, ": ", sites)
     stitched_nt = fxn.wobble(stitched_nt, sites, enzymes)
 
     # If optional 5'/3' sequences are specified, add them to the relevant place

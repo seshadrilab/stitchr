@@ -917,22 +917,21 @@ def wobble(sequence, sites, enzymes):
     """
     for i in sites:
         while len(sites[i]) > 0:
-            site_list = sites[i]
-            a = site_list[0]
+            r_index = sites[i][0]
             site = i.site
             site_len = len(site)
             if (site_len % 3) != 0:
                 site_len += (3 - (site_len % 3))
-            seq_len = len(sequence[:a-2])
+            seq_len = len(sequence[:r_index-2])
             if (seq_len % 3) == 0:
-                site = sequence[a-2:a-2+site_len]
-                sequence = sequence[:a-2] + replace_codon(site) + sequence[a-2+site_len:]
+                site = sequence[r_index-2:r_index-2+site_len]
+                sequence = sequence[:r_index-2] + replace_codon(site) + sequence[r_index-2+site_len:]
             elif(seq_len % 3) == 1:
-                site = sequence[a-3: a-3+site_len]
-                sequence = sequence[:a-3] + replace_codon(site) + sequence[a-3+site_len:]
+                site = sequence[r_index-3: r_index-3+site_len]
+                sequence = sequence[:r_index-3] + replace_codon(site) + sequence[r_index-3+site_len:]
             else:
-                site = sequence[a-4: a-4+site_len]
-                sequence = sequence[:a-4] + replace_codon(site) + sequence[a-4+site_len:]
+                site = sequence[r_index-4: r_index-4+site_len]
+                sequence = sequence[:r_index-4] + replace_codon(site) + sequence[r_index-4+site_len:]
             sites = check_restricts(sequence, enzymes)
     #Recheck
     for i in sites:
