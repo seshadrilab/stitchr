@@ -52,7 +52,7 @@ def display(seq, parts, linker):
         [sg.Push(), sg.Button('Highlight'), sg.Button('Exit')],
     ]
 
-    window = sg.Window('NT Output', layout, finalize=True)
+    window = sg.Window('Sequence Display', layout, finalize=True)
     multiline = window['-Multiline']
     widget = multiline.Widget
     while True:
