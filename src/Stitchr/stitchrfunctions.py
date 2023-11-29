@@ -922,7 +922,7 @@ def wobble(sequence, sites, enzymes):
             site_len = len(site)
             if (site_len % 3) != 0:
                 site_len += (3 - (site_len % 3))
-                site = sequence[r_index -2: r_index -2 + site_len
+                site = sequence[r_index -2: r_index -2 + site_len]
             seq_len = len(sequence[:r_index-2])
             if (seq_len % 3) == 0:
                 site = sequence[r_index-2:r_index-2+site_len]
