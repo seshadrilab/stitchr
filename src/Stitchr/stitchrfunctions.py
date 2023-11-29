@@ -895,7 +895,7 @@ def check_restricts(sequence, enzymes):
     rb = Re.RestrictionBatch()
     for i in enzymes:
         rb.add(i)
-    return(rb.search(seq))
+    return rb.search(seq)
 
 
 def find_start(sequence):
@@ -906,7 +906,7 @@ def find_start(sequence):
     """
     seq = Seq(sequence)
     result = seq.index('ATG')
-    return(result)
+    return result
 
 
 def wobble(sequence, sites, enzymes):
@@ -938,7 +938,7 @@ def wobble(sequence, sites, enzymes):
     for i in sites:
         if len(sites[i]) > 0:
             sequence = wobble(sequence, sites, enzymes)
-    return(sequence)
+    return sequence
 
 def replace_codon(seq):
     """
@@ -953,7 +953,7 @@ def replace_codon(seq):
             if (codons[codon] == codons[site]) & (codon != site):
                 nt += codon
                 break
-    return(nt)
+    return nt
 
 
 def main():
