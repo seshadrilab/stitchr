@@ -917,24 +917,25 @@ def wobble(sequence, sites, enzymes):
     """
     for i in sites:
         while len(sites[i]) > 0:
-            r_index = sites[i][0] #This is the index at which the enzyme would cut, we need to -1 to get the actual start of sequence, and then -1 again to get the 0 index version
             site = i.site
+            r_index = sequence.index(site)
             site_len = len(site)
+
             if (site_len % 3) != 0:
                 site_len += (3 - (site_len % 3))
-                site = sequence[r_index -2: r_index -2 + site_len]
-            seq_len = len(sequence[:r_index-2])
-            if (seq_len % 3) == 0:
-                site = sequence[r_index-2:r_index-2+site_len]
-                sequence = sequence[:r_index-2] + replace_codon(site) + sequence[r_index-2+site_len:]
-            elif(seq_len % 3) == 1:
-                site = sequence[r_index-3: r_index-3+site_len]
-                sequence = sequence[:r_index-3] + replace_codon(site) + sequence[r_index-3+site_len:]
-            else:
-                site = sequence[r_index-4: r_index-4+site_len]
-                sequence = sequence[:r_index-4] + replace_codon(site) + sequence[r_index-4+site_len:]
+                site = sequence[r_index: r_index + site_len]
+            seq_len = len(sequence[:r_index])
+
+            #Make sure the change is in frame
+            if(seq_len % 3) == 1:
+                r_index = r_index - 1
+            elif(seq_len % 3) == 2:
+                r_index = r_index - 2
+
+            site = sequence[r_index: r_index+site_len]
+            sequence = sequence[:r_index] + replace_codon(site) + sequence[r_index+site_len:]
             sites = check_restricts(sequence, enzymes)
-    #Recheck
+    # Recheck
     for i in sites:
         if len(sites[i]) > 0:
             sequence = wobble(sequence, sites, enzymes)
