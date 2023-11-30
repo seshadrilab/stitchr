@@ -1015,6 +1015,15 @@ tgaacacaggctttcagaaacttgtatttggaactggcacctgacttctggtcagtccaa
 ggaaatactggaggcttcaaaactatctttggagcaggaacaagactatttgttaaagca
 a
 
+>MOUSEA|TRAC*00|Mus musculus|F| | | | | | | | | | |~CONSTANT
+gacattcagaacccggaaccggctgtataccagctgaaggacccccgatctcaggatagt
+actctgtgcctgttcaccgactttgatagtcagatcaatgtgcctaaaaccatggaatcc
+ggaacttttattaccgacaagtgcgtgctggatatgaaagccatggacagtaagtcaaac
+ggcgccatcgcttggagcaatcagacatccttcacttgccaggatatcttcaaggagacc
+aacgcaacatacccatcctctgacgtgccctgtgatgccaccctgacagagaagtctttc
+gaaacagacatgaacctgaattttcagaatctgagcgtgatgggcctgagaatcctgctg
+ctgaaggtcgctgggtttaatctgctgatgacactgcggctgtggtcctcatga
+
 >X02883|TRAC*01|Homo sapiens|F|EX1+EX2+EX3+EX4UTR|?|957 nt|?| | | | |957+0=957| |~CONSTANT
 atatccagaaccctgaccctgccgtgtaccagctgagagactctaaatccagtgacaagt
 ctgtctgcctattcaccgattttgattctcaaacaaatgtgtcacaaagtaaggattctg

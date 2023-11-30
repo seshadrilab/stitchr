@@ -1124,6 +1124,17 @@ ctcctacgagcagtacttcgggccgggcaccaggctcacggtcacag
 >X02987|TRBJ2-7*02|Homo sapiens|ORF|J-REGION|1890..1936|47 nt|2| | | | |47+0=47| | |~JOINING
 ctcctacgagcagtacgtcgggccgggcaccaggctcacggtcacag
 
+>MOUSEB|TRBC*00|Mus musculus|F| | | | | | | | | | |~CONSTANT
+gaagatctacgtaacgtgacaccacccaaagtctcactgtttgagcctagcaaggcagaa
+attgccaacaagcagaaggccaccctggtgtgcctggcaagagggttctttccagatcac
+gtggagctgtcctggtgggtcaacggcaaagaagtgcattctggggtctgcaccgacccc
+caggcttacaaggagagtaattactcatattgtctgtcaagccggctgagagtgtccgcc
+acattctggcacaaccctaggaatcatttccgctgccaggtccagtttcacggcctgagt
+gaggaagataaatggccagaggggtcacctaagccagtgacacagaacatcagcgcagaa
+gcctggggacgagcagactgtggcattactagcgcctcctatcatcagggcgtgctgagc
+gccactatcctgtacgagattctgctgggaaaggccaccctgtatgctgtgctggtctcc
+ggcctggtgctgatggccatggtcaagaaaaagaactct
+
 >M12887|TRBC1*01|Homo sapiens|F|EX1+EX2+EX3+EX4|?|530 nt|?| | | | |530+0=530| |~CONSTANT
 aggacctgaacaaggtgttcccacccgaggtcgctgtgtttgagccatcagaagcagaga
 tctcccacacccaaaaggccacactggtgtgcctggccacaggcttcttccccgaccacg
