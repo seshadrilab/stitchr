@@ -34,3 +34,10 @@ class TestRestrict:
         altered = fxn.translate_nt(altered)
         unaltered = fxn.translate_nt(s)
         assert altered == unaltered
+
+    #Add tests for enzymes that have * or N in their restriction site
+    #Add tests for different length enzyme sites
+    #Add tests for different reading frames for sites
+    #Add test for an enzyme site at beginning of sequence
+    #Add test for an enzyme site at end of sequence
+    #Add test for codons that have only one nt coding option
