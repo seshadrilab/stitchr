@@ -16,7 +16,7 @@ class TestRestrict:
         Checks to see if two sequences are identical w/ and w/out editing with our process and no restriction sites
         """
         s = "ATGAAATCCTTGAGAGTTTTACTAGTGATCCTGTGGCTTCAGTTGAGCTGGGTTTGGAGCCAACAGAAGGAGGTGGAGCAGAATTCTGGACCCCTCAGTGTTCCAGAGGGAGCCATTGCCTCTCTCAACTGCACTTACAGTGACCGAGGTTCCCAGTCCTTCTTCTGGTACAGACAATATTCTGGGAAAAGCCCTGAGTTGATAATGTTCATATACTCCAATGGTGACAAAGAAGATGGAAGGTTTACAGCACAGCTCAATAAAGCCAGCCAGTATGTTTCTCTGCTCATCAGAGACTCCCAGCCCAGTGATTCAGCCACCTACCTCTGTGCCGTGAACTTCGGCGGAGGAAAGCTTATCTTCGGACAGGGAACGGAGTTATCTGTGAAACCCAATATCCAGAACCCTGACCCTGCCGTGTACCAGCTGAGAGACTCTAAATCCAGTGACAAGTCTGTCTGCCTATTCACCGATTTTGATTCTCAAACAAATGTGTCACAAAGTAAGGATTCTGATGTGTATATCACAGACAAAACTGTGCTAGACATGAGGTCTATGGACTTCAAGAGCAACAGTGCTGTGGCCTGGAGCAACAAATCTGACTTTGCATGTGCAAACGCCTTCAACAACAGCATTATTCCAGAAGACACCTTCTTCCCCAGCCCAGAAAGTTCCTGTGATGTCAAGCTGGTCGAGAAAAGCTTTGAAACAGATACGAACCTAAACTTTCAAAACCTGTCAGTGATTGGGTTCCGAATCCTCCTCCTGAAAGTGGCCGGGTTTAATCTGCTCATGACGCTGCGGCTGTGGTCCAGC"
-        enzymes = ["BamHI, SalI"]
+        enzymes = ["BamHI", "SalI"]
         altered = TestRestrict.process(s, enzymes)
         assert altered == s
         altered = fxn.translate_nt(altered)
@@ -35,9 +35,9 @@ class TestRestrict:
         unaltered = fxn.translate_nt(s)
         assert altered == unaltered
 
-    #Add tests for enzymes that have * or N in their restriction site
-    #Add tests for different length enzyme sites
-    #Add tests for different reading frames for sites
-    #Add test for an enzyme site at beginning of sequence
-    #Add test for an enzyme site at end of sequence
-    #Add test for codons that have only one nt coding option
+    #TODO tests for enzymes that have * or N in their restriction site
+    #TODO tests for different length enzyme sites
+    #TODO tests for different reading frames for sites
+    #TODO test for an enzyme site at beginning of sequence
+    #TODO test for an enzyme site at end of sequence
+    #TODO test for codons that have only one nt coding option
