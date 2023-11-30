@@ -269,6 +269,8 @@ def main():
 
         [sg.Checkbox('CDR3 flanking nucleotides (20)', key='chk_seamless', enable_events=True, font=(fnt, 12))],
 
+        [sg.Checkbox('Add Restriction Sites (BamHI, SalI)', key='chk_restriction', enable_events=True, font=(fnt, 12))],
+
         [sg.Button('Run Stitchr', size=(int(box_width / 4), 2), font=(fnt, 20))],
 
         [sg.InputText(key='Export output', do_not_clear=False, enable_events=True, visible=False,
@@ -467,6 +469,17 @@ def main():
             else:
                 seamless = False
 
+            Seq_5 = ""
+            Seq_3 = ""
+            restriction = False
+            if values['chk_restriction']:
+                if values['chk_linker']:
+                    Seq_5 = "GGATCC"
+                    Seq_3 = "GTCGAC"
+                    restriction = False
+                else:
+                    restriction = True
+
             # Then stitch each individual chain...
             for ref_chain in ['TR1', 'TR2']:
                 chain = convert_chains[receptor][ref_chain]
@@ -527,12 +540,12 @@ def main():
                             outputs[ref_chain + '_out_list'], \
                             outputs[ref_chain + '_stitched'], \
                             outputs[ref_chain + '_offset'] = st.stitch(tcr_bits, tcr_dat, functionality,
-                                                                       partial, codons, 3, preferred)
+                                                                       partial, codons, 3, preferred, ref_chain, restriction)
 
                             outputs[ref_chain + '_out_str'] = '|'.join(outputs[ref_chain + '_out_list'])
                             outputs[ref_chain + '_fasta'] = fxn.fastafy('nt|' + outputs[ref_chain + '_out_str'],
                                                                         outputs[ref_chain + '_stitched'])
-
+                           
                             window[ref_chain + '_out'].update(outputs[ref_chain + '_fasta'])
 
                         except Exception as message:
@@ -575,9 +588,9 @@ def main():
 
                             outputs['linker_seq'] = fxn.get_linker_seq(outputs['linker'], linkers)
 
-                            outputs['linked'] = outputs['TR' + tr1 + '_stitched'] + \
+                            outputs['linked'] = Seq_5 + outputs['TR' + tr1 + '_stitched'] + \
                                                 outputs['linker_seq'] + \
-                                                outputs['TR' + tr2 + '_stitched']
+                                                outputs['TR' + tr2 + '_stitched'] + Seq_3
 
                             outputs['linked_header'] = '_'.join([outputs['TR' + tr1 + '_out_str'],
                                                                  outputs['linker'],
