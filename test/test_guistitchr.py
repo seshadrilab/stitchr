@@ -1,4 +1,6 @@
 import filecmp
+from Bio import SeqIO
+from Stitchr import stitchrfunctions as fxn
 
 class TestOutFiles:
     """Ensures exported FASTAs are same as baseline versions.
@@ -26,13 +28,63 @@ class TestOutFiles:
     """
 
     def test_alphabeta(self):
-        # filecmp.cmp() should return True
+        # Does not contain restriction sites so files should be identical
         assert filecmp.cmp('baseline_ab.fasta', 'new_ab.fasta')
 
+
     def test_gammadelta(self):
-        # filecmp.cmp() should return True
-        assert filecmp.cmp('baseline_gd.fasta', 'new_gd.fasta')
+        # Gamma chain contains two BamHI restriction sites
+        base_nt = []
+        base_aa = []
+        new_nt = []
+        new_aa = []
+
+        for record in SeqIO.parse('baseline_gd.fasta', "fasta"):
+            seq = record.seq
+            base_nt.append(seq)
+            base_aa.append(fxn.translate_nt(str(seq)))
+        
+        for record in SeqIO.parse('new_gd.fasta', "fasta"):
+            seq = record.seq
+            new_nt.append(seq)
+            new_aa.append(fxn.translate_nt(str(seq)))
+
+        # Confirm only the first record (gamma chain) and final output (both chains)
+        # have changed nucleotide sequences
+        assert base_nt[0] != new_nt[0]
+        assert base_nt[1] == new_nt[1]
+        assert base_nt[2] != new_nt[2]
+
+        # Confirm all translations the same
+        assert base_aa[0] == new_aa[0]
+        assert base_aa[1] == new_aa[1]
+        assert base_aa[2] == new_aa[2]
+
 
     def test_template(self):
-        # filecmp.cmp() should return True
-        assert filecmp.cmp('baseline_template.fasta', 'new_template.fasta')
+        # Beta chain contains one BamHI restriction site
+        base_nt = []
+        base_aa = []
+        new_nt = []
+        new_aa = []
+
+        for record in SeqIO.parse('baseline_template.fasta', "fasta"):
+            seq = record.seq
+            base_nt.append(seq)
+            base_aa.append(fxn.translate_nt(str(seq)))
+        
+        for record in SeqIO.parse('new_template.fasta', "fasta"):
+            seq = record.seq
+            new_nt.append(seq)
+            new_aa.append(fxn.translate_nt(str(seq)))
+
+        # Confirm only the second record (beta chain) and final output (both chains)
+        # have changed nucleotide sequences
+        assert base_nt[0] == new_nt[0]
+        assert base_nt[1] != new_nt[1]
+        assert base_nt[2] != new_nt[2]
+
+        # Confirm all translations the same
+        assert base_aa[0] == new_aa[0]
+        assert base_aa[1] == new_aa[1]
+        assert base_aa[2] == new_aa[2]
