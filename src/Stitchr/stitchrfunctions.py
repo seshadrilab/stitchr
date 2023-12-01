@@ -222,7 +222,7 @@ def autofill_input(cmd_line_args, chain):
 
     # Default constant regions for humans and mice
     if not cmd_line_args['c']:
-        if cmd_line_args['species'] in ['HUMAN', 'MOUSE']:
+        if cmd_line_args['species'] in ['MOUSE']:
             if chain == 'TRA':
                 cmd_line_args['c'] = 'TRAC*01'
             elif chain == 'TRB':
@@ -230,6 +230,30 @@ def autofill_input(cmd_line_args, chain):
                     cmd_line_args['c'] = 'TRBC1*01'
                 elif 'TRBJ2' in cmd_line_args['j']:
                     cmd_line_args['c'] = 'TRBC2*01'
+            elif chain == 'TRD':
+                cmd_line_args['c'] = 'TRDC*01'
+            elif chain == 'TRG':
+                if cmd_line_args['species'] == 'HUMAN':
+                    if 'TRGJ2' in cmd_line_args['j'] or 'TRGJP2' in cmd_line_args['j']:
+                        cmd_line_args['c'] = 'TRGC2*02'
+                    else:
+                        cmd_line_args['c'] = 'TRGC1*01'
+                elif cmd_line_args['species'] == 'MOUSE':
+                    if 'TRGJ1' in cmd_line_args['j']:
+                        cmd_line_args['c'] = 'TRGC1*01'
+                    elif 'TRGJ2' in cmd_line_args['j']:
+                        cmd_line_args['c'] = 'TRGC2*cmd_line01'
+                    elif 'TRGJ3' in cmd_line_args['j']:
+                        cmd_line_args['c'] = 'TRGC3*01'
+                    elif 'TRGJ4' in cmd_line_args['j']:
+                        cmd_line_args['c'] = 'TRGC4*01'
+        if cmd_line_args['species'] in ['HUMAN']:
+            # Use custom mouse constant regions for alpha-beta TCRs
+            if chain == 'TRA':
+                cmd_line_args['c'] = 'TRAC*00'
+            elif chain == 'TRB':
+                cmd_line_args['c'] = 'TRBC*00'
+            # Keep using stitchr default constant regions for gamma-delta TCRs
             elif chain == 'TRD':
                 cmd_line_args['c'] = 'TRDC*01'
             elif chain == 'TRG':
