@@ -30,6 +30,10 @@ def get_indexes(seq, parts):
                 index1s.append(f'1.{m.start()}')
                 index2s.append(f'1.{m.end()}')
                 names.append(name)
+    start = seq.index('M')
+    index1s.append(f'1.{start}')
+    index2s.append(f'1.{start + 1}')
+    names.append('Start')
     indexes = list(zip(names, index1s, index2s))
     return(indexes)
 
@@ -71,6 +75,9 @@ def display(seq, parts, linker):
                     elif "linker" in name:
                         widget.tag_config('GREEN', foreground='white', background='green', font=font2)
                         widget.tag_add('GREEN', index1, index2)
+                    elif "Start" in name:
+                        widget.tag_config('BLUE', foreground='white', background='blue', font=font2)
+                        widget.tag_add('BLUE', index1, index2)
 
             window['-Multiline'].update(disabled=True)
         '''
