@@ -898,6 +898,17 @@ def check_restricts(sequence, enzymes):
     return rb.search(seq)
 
 
+def find_start(sequence):
+    """
+    Input: Takes a string sequence
+    Ouput: Returns the position of the first ATG codon it finds
+    Method: Utilizes the Biopython Seq module and find function
+    """
+    seq = Seq(sequence)
+    result = seq.index('ATG')
+    return result
+
+
 def wobble(sequence, sites, enzymes):
     """
     Input: String sequence, set of restriction sites and positions they occur
