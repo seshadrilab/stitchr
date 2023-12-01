@@ -950,7 +950,10 @@ def replace_codon(seq):
     for i in range(0, len(seq), 3):
         site = seq[i:i+3].upper()
         for codon in codons:
-            if (codons[codon] == codons[site]) & (codon != site):
+            if site == "ATG":
+                nt+= "ATG"
+                break
+            elif (codons[codon] == codons[site]) & (codon != site):
                 nt += codon
                 break
     return nt
