@@ -598,8 +598,8 @@ def main():
                 if warning_msgs['linked_out']:
                     window['linked_log'].update(warning_msgs['linked_out'])
 
+                sd.display(fxn.translate_nt(outputs['linked']), parts, fxn.translate_nt(outputs['linker_seq']))
             # Re-enable stitchr button once completed
-            sd.display(fxn.translate_nt(outputs['linked']), parts, fxn.translate_nt(outputs['linker_seq']))
             window['Run Stitchr'].update(disabled=False)
 
         elif event == 'Export output':
