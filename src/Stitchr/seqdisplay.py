@@ -89,12 +89,6 @@ def display(seq, parts, linker):
                         widget.tag_add('RED', index1, index2)
 
             window['-Multiline'].update(disabled=True)
-        '''
-        elif event == 'Remove':
-            for name, index1, index2 in indexes:
-                widget.tag_remove('HIGHLIGHT', index1, index2)
-            window['Highlight'].update(disabled=False)'''
-
     window.close()
 
 
