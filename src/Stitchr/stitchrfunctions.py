@@ -887,9 +887,9 @@ def find_j_overlap(nt_cdr3, j_germline):
 
 def check_restricts(sequence, enzymes):
     '''
-    Input: String of TCR sequence, List of enzymes specificed by user to check
-    Ouput: Dictionary of Restriction enzymes that have a site located in the TCR sequence
-    Method: Checks the sequence using a BioPython Restriction enzyme tool   
+    param sequence: string of TCR sequence
+    param enzymes: list of enzymes specificed by user to check
+    return: dictionary of restriction enzymes with sites they occur in sequence
     '''
     seq = Seq(sequence)
     rb = Re.RestrictionBatch()
@@ -898,22 +898,12 @@ def check_restricts(sequence, enzymes):
     return rb.search(seq)
 
 
-def find_start(sequence):
-    """
-    Input: Takes a string sequence
-    Ouput: Returns the position of the first ATG codon it finds
-    Method: Utilizes the Biopython Seq module and find function
-    """
-    seq = Seq(sequence)
-    result = seq.index('ATG')
-    return result
-
-
 def wobble(sequence, sites, enzymes):
     """
-    Input: String sequence, set of restriction sites and positions they occur
-    Output: String sequence that has synonymous AA sequence to input
-    Method: Checks frame and finds a codon that can be excised and still be inframe and sends to replace_codon
+    param sequence: a string DNA sequence
+    param sites: set of restriction sites and positions they occur
+    param enzymes: a list of relavent enzymes
+    return: string nt sequence that has synonymous AA sequence to input
     """
     for i in sites:
         while len(sites[i]) > 0:
@@ -942,9 +932,8 @@ def wobble(sequence, sites, enzymes):
 
 def replace_codon(seq):
     """
-    Input: A string of letter representing a restriction site
-    Output: A string of equal letters replacing restriction site
-    Method: Finds synonymous codon sequences to the input
+    param seq: a string of letters representing a restriction site
+    return: a string of equal letters replacing restriction site
     """
     nt = ""
     for i in range(0, len(seq), 3):
