@@ -359,7 +359,6 @@ def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_w
         c_term_nt_trimmed, cdr3_c_end = fxn.determine_j_interface(specific_args['cdr3'][cdr3_n_offset:],
                                                                   c_term_nt_inframe, c_term_aa,
                                                                   len(done['j']), j_warning_threshold)
-
         # Generate the non-templated sequences using either supplied nucleotides or common codons established earlier
         if input_type == 'nt':
             non_templated_nt = specific_args['cdr3_nt'][cdr3_n_offset * 3:(cdr3_n_offset+cdr3_c_end) * 3]
@@ -369,7 +368,9 @@ def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_w
             non_templated_nt = fxn.rev_translate(non_templated_aa, codon_dict)
             done['cdr3'] = fxn.rev_translate(specific_args['cdr3'], codon_dict)
 
-        # Then finally stitch all that info together and output!
+        done['v'] = done['v'][:len(done['v'])-(cdr3_n_offset)*3]
+        done['c'] = c_term_nt_trimmed
+
         stitched_nt = n_term_nt_trimmed + non_templated_nt + c_term_nt_trimmed
 
     # If optional 5'/3' sequences are specified, add them to the relevant place

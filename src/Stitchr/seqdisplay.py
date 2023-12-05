@@ -87,6 +87,12 @@ def display(seq, parts, linker):
                     elif "*" in name:
                         widget.tag_config('RED', foreground='white', background='red', font=font2)
                         widget.tag_add('RED', index1, index2)
+                    elif "_v" in name:
+                        widget.tag_config('ORANGE', foreground='black', background='orange', font=font2)
+                        widget.tag_add('ORANGE', index1, index2)
+                    elif "_c" in name:
+                        widget.tag_config('PINK', foreground='white', background='brown', font=font2)
+                        widget.tag_add('PINK', index1, index2)
 
             window['-Multiline'].update(disabled=True)
     window.close()
