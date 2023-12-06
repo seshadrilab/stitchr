@@ -83,7 +83,7 @@ def display(nt, parts, linker, modifier):
                         widget.tag_config('PURPLE', foreground='white', background='purple', font=font2)
                         widget.tag_add('PURPLE', index1, index2)
                     elif "linker" in name:
-                        widget.tag_config('BLUE', foreground='white', background='blue', font=font2)
+                        widget.tag_config('BLUE', foreground='white', background='teal', font=font2)
                         widget.tag_add('BLUE', index1, index2)
                     elif "Start" in name:
                         widget.tag_config('GREEN', foreground='white', background='green', font=font2)
@@ -95,7 +95,7 @@ def display(nt, parts, linker, modifier):
                         widget.tag_config('ORANGE', foreground='black', background='orange', font=font2)
                         widget.tag_add('ORANGE', index1, index2)
                     elif "_c" in name:
-                        widget.tag_config('PINK', foreground='white', background='brown', font=font2)
+                        widget.tag_config('PINK', foreground='black', background='pink', font=font2)
                         widget.tag_add('PINK', index1, index2)
 
             window['-Multiline'].update(disabled=True)
