@@ -115,7 +115,6 @@ def display(nt, parts, linker):
         if event in (sg.WIN_CLOSED, 'Exit'):
             break
         elif event == 'Highlight':
-            print(m_indexes)
             m_widget = get_highlights(m_widget, m_indexes, font2)
             l_widget = get_highlights(l_widget, l_indexes, font2)
             window['-Multiline'].update(disabled=True)
