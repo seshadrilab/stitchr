@@ -20,7 +20,7 @@ def get_partlist(chains, linker):
     return zip(names, parts)
 
 
-def get_indexes(seq, parts):
+def get_indexes(seq, parts, a):
     """
     Input: A string DNA sequence and a dictionary of gene regions and their DNA sequence
     Output: A list of tuples where each gene region occurs in DNA sequence
@@ -32,25 +32,29 @@ def get_indexes(seq, parts):
         if part in seq:
             if name == 'Start':
                 start = seq.index(part)
-                index1s.append(f'1.{start}')
-                index2s.append(f'1.{start + 1}')
+                index1s.append(f'1.{a*start}')
+                index2s.append(f'1.{a*(start + 1)}')
                 names.append(name)
             else:
                 for m in re.finditer(part, seq):
-                    index1s.append(f'1.{m.start()}')
-                    index2s.append(f'1.{m.end()}')
+                    index1s.append(f'1.{a*m.start()}')
+                    index2s.append(f'1.{a*m.end()}')
                     names.append(name)
     indexes = list(zip(names, index1s, index2s))
     return(indexes)
 
 
-def display(seq, parts, linker):
+def display(nt, parts, linker, modifier):
     """
     Input: A string DNA sequence and a dictionary of gene regions and their DNA sequence
     Output: A GUI display of the DNA sequence that highlights different regions
     """
+    seq = fxn.translate_nt(nt)
     parts = get_partlist(parts, linker)
-    indexes = get_indexes(seq, parts)
+    indexes = get_indexes(seq, parts, modifier)
+
+    if modifier == 3:
+        seq = nt
 
     sg.theme('DarkBlue3')
     font1 = ('Courier New', 10)
