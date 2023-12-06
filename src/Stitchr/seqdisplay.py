@@ -11,7 +11,7 @@ def get_partlist(chains, linker):
         for query in chain:
             names.append(str(TR) + "_" + query)
             parts.append(chain[query])
-    names.append("linker")
+    names.append("Linker")
     parts.append(linker)
     names.append("Start")
     parts.append('M')
@@ -20,7 +20,7 @@ def get_partlist(chains, linker):
     return zip(names, parts)
 
 
-def get_indexes(seq, parts, a):
+def get_indexes(seq, parts, a=1):
     """
     Input: A string DNA sequence and a dictionary of gene regions and their DNA sequence
     Output: A list of tuples where each gene region occurs in DNA sequence
@@ -41,8 +41,34 @@ def get_indexes(seq, parts, a):
                     index2s.append(f'1.{a*m.end()}')
                     names.append(name)
     indexes = list(zip(names, index1s, index2s))
-    return(indexes)
+    return indexes
 
+
+def get_highlights(widget, indexes, fonts):
+    for name, index1, index2 in indexes:
+                    # Make it so that a value is stored in indexes that will check against defined (v, j, cdr3, c, start, stop)
+                    if "_cdr3" in name:
+                        widget.tag_config('BLACK', foreground='white', background='black', font=fonts)
+                        widget.tag_add('BLACK', index1, index2)
+                    elif "_l" in name:
+                        widget.tag_config('PURPLE', foreground='white', background='purple', font=fonts)
+                        widget.tag_add('PURPLE', index1, index2)
+                    elif "Linker" in name:
+                        widget.tag_config('BLUE', foreground='white', background='teal', font=fonts)
+                        widget.tag_add('BLUE', index1, index2)
+                    elif "Start" in name:
+                        widget.tag_config('GREEN', foreground='white', background='green', font=fonts)
+                        widget.tag_add('GREEN', index1, index2)
+                    elif "End" in name:
+                        widget.tag_config('RED', foreground='white', background='red', font=fonts)
+                        widget.tag_add('RED', index1, index2)
+                    elif "_v" in name:
+                        widget.tag_config('ORANGE', foreground='black', background='orange', font=fonts)
+                        widget.tag_add('ORANGE', index1, index2)
+                    elif "_c" in name:
+                        widget.tag_config('PINK', foreground='black', background='pink', font=fonts)
+                        widget.tag_add('PINK', index1, index2)
+    return widget
 
 def display(nt, parts, linker, modifier):
     """
@@ -51,7 +77,11 @@ def display(nt, parts, linker, modifier):
     """
     seq = fxn.translate_nt(nt)
     parts = get_partlist(parts, linker)
-    indexes = get_indexes(seq, parts, modifier)
+    m_indexes = get_indexes(seq, parts, modifier)
+
+    legend = "leader seqeunce | Linker sequence | cdr3 sequence | v region | j region | c region | Start | End"
+    parts = [('_'+i, i) for i in legend.split(' | ')]
+    l_indexes = get_indexes(legend, parts)
 
     if modifier == 3:
         seq = nt
@@ -62,43 +92,27 @@ def display(nt, parts, linker, modifier):
     sg.set_options(font=font1)
 
     layout = [
-        [sg.Multiline(seq, size=(100, 20), key='-Multiline')],
+        [sg.Multiline(seq, size=(100, 10), key='-Multiline')],
+        [sg.Multiline(legend, size=(100, 1), key='-Legend')],
         [sg.Push(), sg.Button('Highlight'), sg.Button('Exit')],
     ]
 
     window = sg.Window('Sequence Display', layout, finalize=True)
     multiline = window['-Multiline']
-    widget = multiline.Widget
+    legend = window['-Legend']
+    m_widget = multiline.Widget
+    l_widget = legend.Widget
+
     while True:
         event, values = window.read()
         if event in (sg.WIN_CLOSED, 'Exit'):
             break
         elif event == 'Highlight':
-            for name, index1, index2 in indexes:
-                    # Make it so that a value is stored in in indexes that will check against defined (v, j, cdr3, c, start, stop)
-                    if "_cdr3" in name:
-                        widget.tag_config('BLACK', foreground='white', background='black', font=font2)
-                        widget.tag_add('BLACK', index1, index2)
-                    elif "_l" in name:
-                        widget.tag_config('PURPLE', foreground='white', background='purple', font=font2)
-                        widget.tag_add('PURPLE', index1, index2)
-                    elif "linker" in name:
-                        widget.tag_config('BLUE', foreground='white', background='teal', font=font2)
-                        widget.tag_add('BLUE', index1, index2)
-                    elif "Start" in name:
-                        widget.tag_config('GREEN', foreground='white', background='green', font=font2)
-                        widget.tag_add('GREEN', index1, index2)
-                    elif "*" in name:
-                        widget.tag_config('RED', foreground='white', background='red', font=font2)
-                        widget.tag_add('RED', index1, index2)
-                    elif "_v" in name:
-                        widget.tag_config('ORANGE', foreground='black', background='orange', font=font2)
-                        widget.tag_add('ORANGE', index1, index2)
-                    elif "_c" in name:
-                        widget.tag_config('PINK', foreground='black', background='pink', font=font2)
-                        widget.tag_add('PINK', index1, index2)
+            m_widget = get_highlights(m_widget, m_indexes, font2)
+            l_widget = get_highlights(l_widget, l_indexes, font2)
 
             window['-Multiline'].update(disabled=True)
+            window['-Legend'].update(disabled=True)
     window.close()
 
 
