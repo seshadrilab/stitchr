@@ -17,14 +17,15 @@ def get_partlist(chains, linker):
     parts.append('M')
     names.append('End')
     parts.append('*')
-    return zip(names, parts)
+    return names, parts
 
 
-def get_indexes(seq, parts, a=1):
+def get_indexes(seq, name, part, a=1):
     """
     Input: A string DNA sequence and a dictionary of gene regions and their DNA sequence
     Output: A list of tuples where each gene region occurs in DNA sequence
     """
+    parts = list(zip(name, part))
     names = []
     index1s = []
     index2s = []
@@ -70,21 +71,26 @@ def get_highlights(widget, indexes, fonts):
                         widget.tag_add('PINK', index1, index2)
     return widget
 
-def display(nt, parts, linker, modifier):
+def display(nt, parts, linker):
     """
     Input: A string DNA sequence and a dictionary of gene regions and their DNA sequence
     Output: A GUI display of the DNA sequence that highlights different regions
     """
-    seq = fxn.translate_nt(nt)
-    parts = get_partlist(parts, linker)
-    m_indexes = get_indexes(seq, parts, modifier)
+    aa = fxn.translate_nt(nt)
+    m_name, m_part = get_partlist(parts, linker)
+
+    nt_m_indexes = get_indexes(aa, m_name, m_part, 3)
+    aa_m_indexes = get_indexes(aa, m_name, m_part, 1)
+
+    m_indexes = aa_m_indexes
 
     legend = "leader seqeunce | Linker sequence | cdr3 sequence | v region | j region | c region | Start | End"
-    parts = [('_'+i, i) for i in legend.split(' | ')]
-    l_indexes = get_indexes(legend, parts)
-
-    if modifier == 3:
-        seq = nt
+    l_name = []
+    l_part = []
+    for i in legend.split(' | '):
+        l_name.append('_'+i)
+        l_part.append(i)
+    l_indexes = get_indexes(legend, l_name, l_part)
 
     sg.theme('DarkBlue3')
     font1 = ('Courier New', 10)
@@ -92,9 +98,9 @@ def display(nt, parts, linker, modifier):
     sg.set_options(font=font1)
 
     layout = [
-        [sg.Multiline(seq, size=(100, 10), key='-Multiline')],
+        [sg.Multiline(aa, size=(100, 10), key='-Multiline')],
         [sg.Multiline(legend, size=(100, 1), key='-Legend')],
-        [sg.Push(), sg.Button('Highlight'), sg.Button('Exit')],
+        [sg.Push(), sg.Button('Highlight'), sg.Button('Exit'), sg.Button('NT'), sg.Button('AA')],
     ]
 
     window = sg.Window('Sequence Display', layout, finalize=True)
@@ -103,16 +109,24 @@ def display(nt, parts, linker, modifier):
     m_widget = multiline.Widget
     l_widget = legend.Widget
 
+    mode = 1
     while True:
         event, values = window.read()
         if event in (sg.WIN_CLOSED, 'Exit'):
             break
         elif event == 'Highlight':
+            print(m_indexes)
             m_widget = get_highlights(m_widget, m_indexes, font2)
             l_widget = get_highlights(l_widget, l_indexes, font2)
-
             window['-Multiline'].update(disabled=True)
             window['-Legend'].update(disabled=True)
+        elif event == 'NT':
+             window['-Multiline'].update(nt)
+             m_indexes = nt_m_indexes
+        elif event == 'AA':
+             window['-Multiline'].update(aa)
+             m_indexes = aa_m_indexes
+
     window.close()
 
 
