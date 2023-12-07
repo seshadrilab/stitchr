@@ -884,6 +884,7 @@ def find_j_overlap(nt_cdr3, j_germline):
 
     return j_germline[index_longest + len(longest_overlap):]
 
+
 def check_restricts(sequence, enzymes):
     '''
     param sequence: string of TCR sequence
@@ -945,6 +946,7 @@ def replace_codon(seq):
                 nt += codon
                 break
     return nt
+
 
 def main():
     print("Please use the appropriate 'stitchr', 'thimble', 'gui_stitchr' or 'stitchrdl' command.")

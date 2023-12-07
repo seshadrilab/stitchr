@@ -376,6 +376,7 @@ def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_w
     stitched_nt = fxn.wobble(stitched_nt, sites, enzymes)
 
     # If optional 5'/3' sequences are specified, add them to the relevant place
+    '''
     if specific_args['5_prime_seq']:
         stitched_nt = specific_args['5_prime_seq'] + stitched_nt
 
@@ -389,7 +390,8 @@ def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_w
 
     if specific_args['3_prime_seq']:
         stitched_nt += specific_args['3_prime_seq']
-
+    '''
+    transl_offset = 0
     # Then finally stitch all that info together and output!
     out_bits = [specific_args['name'], used_alleles['v'], used_alleles['j'],
                 used_alleles['c'], specific_args['cdr3'], used_alleles['l'] + '(L)']
