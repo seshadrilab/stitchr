@@ -14,6 +14,10 @@ import sys
 import textwrap
 import datetime
 import warnings
+from Bio.Seq import Seq
+from Bio.Restriction import Restriction as Re
+from Bio.Seq import Seq
+from Bio.Restriction import Restriction as Re
 
 # Ensure correct importlib-resources function imported
 if sys.version_info < (3, 9):
@@ -942,6 +946,7 @@ def replace_codon(seq):
                 nt += codon
                 break
     return nt
+
 
 def main():
     print("Please use the appropriate 'stitchr', 'thimble', 'gui_stitchr' or 'stitchrdl' command.")
