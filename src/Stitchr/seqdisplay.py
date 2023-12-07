@@ -74,7 +74,7 @@ def get_highlights(widget, indexes, fonts):
                         widget.tag_add('BROWN', index1, index2)
     return widget
 
-def display(nt, parts, linker):
+def display(nt, parts, linker=[]):
     """
     Input: A string DNA sequence and a dictionary of gene regions and their DNA sequence
     Output: A GUI display of the DNA sequence that highlights different regions
