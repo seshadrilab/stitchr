@@ -69,6 +69,9 @@ def get_highlights(widget, indexes, fonts):
                     elif "_c" in name:
                         widget.tag_config('PINK', foreground='black', background='pink', font=fonts)
                         widget.tag_add('PINK', index1, index2)
+                    elif "_j" in name:
+                        widget.tag_config('BROWN', foreground='white', background='brown', font=fonts)
+                        widget.tag_add('BROWN', index1, index2)
     return widget
 
 def display(nt, parts, linker):

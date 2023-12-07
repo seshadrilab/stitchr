@@ -369,7 +369,12 @@ def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_w
             done['cdr3'] = fxn.rev_translate(specific_args['cdr3'], codon_dict)
 
         done['v'] = done['v'][:len(done['v'])-(cdr3_n_offset)*3]
-        done['c'] = c_term_nt_trimmed
+
+        c_index = (c_term_nt_trimmed.index(done['c'][:100]))
+        c_seq = c_term_nt_trimmed[c_index:]
+        modulus = len(c_seq)%3
+        done['c'] = c_seq[modulus:]
+        done['j'] = c_term_nt_trimmed[:c_index+modulus]
 
         stitched_nt = n_term_nt_trimmed + non_templated_nt + c_term_nt_trimmed
 
