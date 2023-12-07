@@ -332,7 +332,7 @@ def get_additional_genes(imgt_data, imgt_functionality):
     :return: the same dicts supplemented with any genes found in the 'additional genes.fasta' file
     """
 
-    with open(data_dir + 'additional-genes.fasta', 'r') as in_file:
+    with open(os.path.join(data_dir, 'additional-genes.fasta'), 'r') as in_file:
         for fasta_id, seq, blank in read_fa(in_file):
             bits = fasta_id.split('|')
 
