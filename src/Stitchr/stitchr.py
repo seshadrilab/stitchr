@@ -102,7 +102,7 @@ def args():
     return parser.parse_args()
 
 
-def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_warning_threshold, preferences):
+def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_warning_threshold, preferences, mouse_c, frame_dat):
     """
     Core function, that performs the actual TCR stitching
     :param specific_args: basic input arguments of a given rearrangement (e.g. V/J/CDR3)
@@ -112,6 +112,7 @@ def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_w
     :param codon_dict: dictionary of which codons to use for which amino acids
     :param j_warning_threshold: int threshold value, if a J substring length match is shorter it will throw a warning
     :param preferences: nested dict of preferred alleles, like the tcr_info dict but one level shallower
+    :param use_mouse_c: whether or not to use custom mouse constant region (default for human alpha-beta)
     :return: list of details of the TCR as constructed,
              plus the stitched together nucleotide sequence (str) and translation offset (int, 0/1/2)
     """
@@ -368,7 +369,26 @@ def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_w
             non_templated_nt = fxn.rev_translate(non_templated_aa, codon_dict)
 
         # Then finally stitch all that info together and output!
-        stitched_nt = n_term_nt_trimmed + non_templated_nt + c_term_nt_trimmed
+        if mouse_c:
+            # Find where the constant region starts and exclude that to get just the J
+            constant_start = c_term_nt_trimmed.index(done['c'][:100])
+            j_term = c_term_nt_trimmed[:constant_start]
+            # Get frame of J gene and remove extra nucleotides from the end
+            j_frame = int(frame_dat[used_alleles['j']]) - 1  # Subtract to make 0-based
+            # Figure how how many nucleotides to remove
+            orig_j = done['j'][j_frame:]
+            n_to_trim = len(orig_j) % 3
+            # Remove extra nucleotides at end of CDR3+J
+            if n_to_trim > 0:
+                trimmed_j = j_term[:-n_to_trim]
+            elif n_to_trim == 0:
+                trimmed_j = j_term
+            # Put the parts together
+            stitched_nt = n_term_nt_trimmed + non_templated_nt + trimmed_j + mouse_c[1]
+            # Update constant region used
+            used_alleles['c'] = mouse_c[0]
+        else:
+            stitched_nt = n_term_nt_trimmed + non_templated_nt + c_term_nt_trimmed
 
     # If optional 5'/3' sequences are specified, add them to the relevant place
     if specific_args['5_prime_seq']:
