@@ -360,6 +360,7 @@ def main():
 
     while True:
         event, values = window.read()
+        values_raw = values
 
         # Prevent TypeError when closing via GUI 'X' button
         if event == sg.WINDOW_CLOSED:
@@ -482,7 +483,7 @@ def main():
                         values = tidy_values(ref_chain, values)
 
                         try:
-                            tcr_dat, functionality, partial = fxn.get_imgt_data(chain, st.gene_types, species)
+                            tcr_dat, functionality, partial, frame_dat = fxn.get_imgt_data(chain, st.gene_types, species)
 
                             # If additional genes provided, just add them to all possible gene segment types
                             if values['additional_genes'] != extra_gene_text + '\n':
@@ -523,11 +524,22 @@ def main():
 
                             tcr_bits = fxn.autofill_input(tcr_bits, chain)
 
+                            # Determine if we'll use default mouse constant region (for human alpha-beta)
+                            mouse_c = ''
+                            if species == 'HUMAN' and not values_raw[ref_chain + 'C']:
+                                if chain == 'TRA':
+                                    mouse_c = ('TRAC*00', tcr_dat['CONSTANT']['TRAC']['00'])
+                                elif chain == 'TRB':
+                                    mouse_c = ('TRBC*00', tcr_dat['CONSTANT']['TRBC']['00'])
+                                else:
+                                    mouse_c = ''
+
                             # Run the stitching
                             outputs[ref_chain + '_out_list'], \
                             outputs[ref_chain + '_stitched'], \
                             outputs[ref_chain + '_offset'] = st.stitch(tcr_bits, tcr_dat, functionality,
-                                                                       partial, codons, 3, preferred)
+                                                                       partial, codons, 3, preferred,
+                                                                       mouse_c, frame_dat)
 
                             outputs[ref_chain + '_out_str'] = '|'.join(outputs[ref_chain + '_out_list'])
                             outputs[ref_chain + '_fasta'] = fxn.fastafy('nt|' + outputs[ref_chain + '_out_str'],

@@ -421,7 +421,7 @@ def main():
     # Get input arguments, determine the TCR chain in use, get codon table, then load the IMGT data in
     input_args, chain = fxn.sort_input(vars(args()))
     codons = fxn.get_optimal_codons(input_args['codon_usage_path'], input_args['species'])
-    imgt_dat, tcr_functionality, partial = fxn.get_imgt_data(chain, gene_types, input_args['species'])
+    imgt_dat, tcr_functionality, partial, frame_dat = fxn.get_imgt_data(chain, gene_types, input_args['species'])
 
     if input_args['suppress_warnings']:
         warnings.filterwarnings('ignore')
@@ -436,8 +436,19 @@ def main():
     else:
         preferred_alleles = {}
 
+    # Determine if we'll use default mouse constant region (for human alpha-beta)
+    raw_args = vars(args())
+    if raw_args['species'] == 'HUMAN' and not raw_args['c']:
+        if chain == 'TRA':
+            mouse_c = ('TRAC*00', imgt_dat['CONSTANT']['TRAC']['00'])
+        elif chain == 'TRB':
+            mouse_c = ('TRBC*00', imgt_dat['CONSTANT']['TRBC']['00'])
+        else:
+            mouse_c = ''
+
     out_list, stitched, offset = stitch(input_args, imgt_dat, tcr_functionality, partial, codons,
-                                        input_args['j_warning_threshold'], preferred_alleles)
+                                        input_args['j_warning_threshold'], preferred_alleles,
+                                        mouse_c, frame_dat)
     out_str = '|'.join(out_list)
 
     # Output the appropriate strings to stdout
