@@ -87,7 +87,7 @@ def display(nt, parts, linker=[]):
 
     m_indexes = aa_m_indexes
 
-    legend = "leader seqeunce | Linker sequence | cdr3 sequence | v region | j region | c region | Start | End"
+    legend = "leader seqeunce | Linker sequence | cdr3 sequence | v region | j region | c region | Start | End | Restriction Sites"
     l_name = []
     l_part = []
     for i in legend.split(' | '):

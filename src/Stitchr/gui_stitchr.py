@@ -269,6 +269,7 @@ def main():
                   size=(8, 1), enable_events=True)],
 
         [sg.Checkbox('CDR3 flanking nucleotides (20)', key='chk_seamless', enable_events=True, font=(fnt, 12))],
+        [sg.Checkbox('Add Restriction Sites (BamHI, SalI)', key='chk_restriction', enable_events=True, font=(fnt, 12))],
 
         [sg.Button('Run Stitchr', size=(int(box_width / 4), 2), font=(fnt, 20))],
 
