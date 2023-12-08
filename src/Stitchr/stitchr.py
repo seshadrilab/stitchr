@@ -359,15 +359,23 @@ def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_w
         c_term_nt_trimmed, cdr3_c_end = fxn.determine_j_interface(specific_args['cdr3'][cdr3_n_offset:],
                                                                   c_term_nt_inframe, c_term_aa,
                                                                   len(done['j']), j_warning_threshold)
-
         # Generate the non-templated sequences using either supplied nucleotides or common codons established earlier
         if input_type == 'nt':
             non_templated_nt = specific_args['cdr3_nt'][cdr3_n_offset * 3:(cdr3_n_offset+cdr3_c_end) * 3]
+            done['cdr3'] = specific_args['cdr3_nt']
         else:
             non_templated_aa = specific_args['cdr3'][cdr3_n_offset:cdr3_n_offset+cdr3_c_end]
             non_templated_nt = fxn.rev_translate(non_templated_aa, codon_dict)
+            done['cdr3'] = fxn.rev_translate(specific_args['cdr3'], codon_dict)
 
-        # Then finally stitch all that info together and output!
+        done['v'] = done['v'][:len(done['v'])-(cdr3_n_offset)*3]
+
+        c_index = (c_term_nt_trimmed.index(done['c'][:100]))
+        c_seq = c_term_nt_trimmed[c_index:]
+        modulus = len(c_seq)%3
+        done['c'] = c_seq[modulus:]
+        done['j'] = c_term_nt_trimmed[:c_index+modulus]
+
         stitched_nt = n_term_nt_trimmed + non_templated_nt + c_term_nt_trimmed
 
     # Constitutive call to a restriction site checker
@@ -397,9 +405,11 @@ def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_w
                 used_alleles['c'], specific_args['cdr3'], used_alleles['l'] + '(L)']
 
     # TODO add information to output header if additional 5'/3' sequences specified?
+    for i in done:
+        done[i] = fxn.translate_nt(done[i])
     if restriction == True:
         stitched_nt = "GGATCC" + stitched_nt + "GTCGAC"
-    return out_bits, stitched_nt, transl_offset
+    return out_bits, stitched_nt, transl_offset, done
 
 
 gene_types = list(fxn.regions.values())

@@ -13,6 +13,7 @@ import os
 from . import stitchrfunctions as fxn
 from . import stitchr as st
 from . import thimble as th
+from . import seqdisplay as sd
 import collections as coll
 import warnings
 
@@ -267,8 +268,7 @@ def main():
          sg.Combo(link_orders[receptor], key='link_order_choice', default_value=link_orders[receptor][1],
                   size=(8, 1), enable_events=True)],
 
-        [sg.Checkbox('Seamless CDR3 stitching', key='chk_seamless', enable_events=True, font=(fnt, 12))],
-
+        [sg.Checkbox('CDR3 flanking nucleotides (20)', key='chk_seamless', enable_events=True, font=(fnt, 12))],
         [sg.Checkbox('Add Restriction Sites (BamHI, SalI)', key='chk_restriction', enable_events=True, font=(fnt, 12))],
 
         [sg.Button('Run Stitchr', size=(int(box_width / 4), 2), font=(fnt, 20))],
@@ -298,12 +298,11 @@ def main():
 
         [sg.Text('TRA arbitrary name', key='TR1_name_text')], [sg.InputText('', key='TR1_name', size=sz)],
 
-        [sg.Text('TRA leader', size=half_sz, key='TR1_l_title_text'), sg.Text('TRAC gene name', key='TR1_c_title_text')],
+        [sg.Text('TRA alternative leader', size=half_sz, key='TR1_l_title_text'), sg.Text('TRAC gene name', size=half_sz, key='TR1_c_title_text')],
 
-        [sg.InputText('', key='TR1_leader', size=half_sz),
-         sg.InputText('', key='TR1C', size=half_sz)],
+        [sg.InputText('', key='TR1_leader', size=half_sz), sg.InputText('', key='TR1C', size=half_sz)],
 
-        [sg.Text('5\' alpha chain append', size=half_sz), sg.Text('3\' alpha chain append')],
+        [sg.Text('5\' chain append', size=half_sz), sg.Text('3\' chain append')],
         [sg.InputText('', key='TR1_5_prime_seq', size=half_sz),
          sg.InputText('', key='TR1_3_prime_seq', size=half_sz)],
 
@@ -328,12 +327,11 @@ def main():
 
         [sg.Text('TRB arbitrary name', key='TR2_name_text')], [sg.InputText('', key='TR2_name', size=sz)],
 
-        [sg.Text('TRB leader', size=half_sz, key='TR2_l_title_text'), sg.Text('TRBC gene name', key='TR2_c_title_text')],
+        [sg.Text('TRB alternative leader', size=half_sz, key='TR2_l_title_text'), sg.Text('TRBC gene name', key='TR2_c_title_text', size=half_sz)],
 
-        [sg.InputText('', key='TR2_leader', size=half_sz),
-         sg.InputText('', key='TR2C', size=half_sz)],
+        [sg.InputText('', key='TR2_leader', size=half_sz), sg.InputText('', key='TR2C', size=half_sz)],
 
-        [sg.Text('5\' alpha chain append', size=half_sz), sg.Text('3\' alpha chain append')],
+        [sg.Text('5\' chain append', size=half_sz), sg.Text('3\' chain append')],
 
         [sg.InputText('', key='TR2_5_prime_seq', size=half_sz),
          sg.InputText('', key='TR2_3_prime_seq', size=half_sz)],
@@ -470,7 +468,7 @@ def main():
                 seamless = True
             else:
                 seamless = False
-
+            parts = []
             Seq_5 = ""
             Seq_3 = ""
             restriction = False
@@ -541,15 +539,14 @@ def main():
                             # Run the stitching
                             outputs[ref_chain + '_out_list'], \
                             outputs[ref_chain + '_stitched'], \
-                            outputs[ref_chain + '_offset'] = st.stitch(tcr_bits, tcr_dat, functionality,
+                            outputs[ref_chain + '_offset'], region = st.stitch(tcr_bits, tcr_dat, functionality,
                                                                        partial, codons, 3, preferred, ref_chain, restriction)
 
                             outputs[ref_chain + '_out_str'] = '|'.join(outputs[ref_chain + '_out_list'])
                             outputs[ref_chain + '_fasta'] = fxn.fastafy('nt|' + outputs[ref_chain + '_out_str'],
                                                                         outputs[ref_chain + '_stitched'])
-                           
                             window[ref_chain + '_out'].update(outputs[ref_chain + '_fasta'])
-
+                            parts.append(region)
                         except Exception as message:
                             warning_msgs[ref_chain + '_out'] = str(message)
 
@@ -589,7 +586,6 @@ def main():
                                                                 "but not provided")
 
                             outputs['linker_seq'] = fxn.get_linker_seq(outputs['linker'], linkers)
-
                             outputs['linked'] = Seq_5 + outputs['TR' + tr1 + '_stitched'] + \
                                                 outputs['linker_seq'] + \
                                                 outputs['TR' + tr2 + '_stitched'] + Seq_3
@@ -614,6 +610,8 @@ def main():
                 if warning_msgs['linked_out']:
                     window['linked_log'].update(warning_msgs['linked_out'])
 
+                if seamless == False:
+                    sd.display(outputs['linked'], parts, fxn.translate_nt(outputs['linker_seq']))
             # Re-enable stitchr button once completed
             window['Run Stitchr'].update(disabled=False)
 
