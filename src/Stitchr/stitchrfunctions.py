@@ -14,7 +14,8 @@ import sys
 import textwrap
 import datetime
 import warnings
-import PySimpleGUI as sg
+from Bio.Seq import Seq
+from Bio.Restriction import Restriction as Re
 
 # Ensure correct importlib-resources function imported
 if sys.version_info < (3, 9):
@@ -880,6 +881,69 @@ def find_j_overlap(nt_cdr3, j_germline):
             index_longest = i
 
     return j_germline[index_longest + len(longest_overlap):]
+
+
+def check_restricts(sequence, enzymes):
+    '''
+    param sequence: string of TCR sequence
+    param enzymes: list of enzymes specificed by user to check
+    return: dictionary of restriction enzymes with sites they occur in sequence
+    '''
+    seq = Seq(sequence)
+    rb = Re.RestrictionBatch()
+    for i in enzymes:
+        rb.add(i)
+    return rb.search(seq)
+
+
+def wobble(sequence, sites, enzymes):
+    """
+    param sequence: a string DNA sequence
+    param sites: set of restriction sites and positions they occur
+    param enzymes: a list of relavent enzymes
+    return: string nt sequence that has synonymous AA sequence to input
+    """
+    for i in sites:
+        while len(sites[i]) > 0:
+            site = i.site
+            r_index = sequence.index(site)
+            site_len = len(site)
+
+            if (site_len % 3) != 0:
+                site_len += (3 - (site_len % 3))
+            seq_len = len(sequence[:r_index])
+
+            #Make sure the change is in frame
+            if(seq_len % 3) == 1:
+                r_index = r_index - 1
+            elif(seq_len % 3) == 2:
+                r_index = r_index - 2
+
+            site = sequence[r_index: r_index+site_len]
+            sequence = sequence[:r_index] + replace_codon(site) + sequence[r_index+site_len:]
+            sites = check_restricts(sequence, enzymes)
+    # Recheck
+    for i in sites:
+        if len(sites[i]) > 0:
+            sequence = wobble(sequence, sites, enzymes)
+    return sequence
+
+def replace_codon(seq):
+    """
+    param seq: a string of letters representing a restriction site
+    return: a string of equal letters replacing restriction site
+    """
+    nt = ""
+    for i in range(0, len(seq), 3):
+        site = seq[i:i+3].upper()
+        for codon in codons:
+            if site == "ATG":
+                nt+= "ATG"
+                break
+            elif (codons[codon] == codons[site]) & (codon != site):
+                nt += codon
+                break
+    return nt
 
 
 def main():

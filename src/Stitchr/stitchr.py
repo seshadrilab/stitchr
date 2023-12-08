@@ -102,7 +102,7 @@ def args():
     return parser.parse_args()
 
 
-def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_warning_threshold, preferences):
+def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_warning_threshold, preferences, ref_chain, restriction):
     """
     Core function, that performs the actual TCR stitching
     :param specific_args: basic input arguments of a given rearrangement (e.g. V/J/CDR3)
@@ -378,7 +378,13 @@ def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_w
 
         stitched_nt = n_term_nt_trimmed + non_templated_nt + c_term_nt_trimmed
 
+    # Constitutive call to a restriction site checker
+    enzymes = ['BamHI', 'SalI']
+    sites = fxn.check_restricts(stitched_nt, enzymes)
+    stitched_nt = fxn.wobble(stitched_nt, sites, enzymes)
+
     # If optional 5'/3' sequences are specified, add them to the relevant place
+    '''
     if specific_args['5_prime_seq']:
         stitched_nt = specific_args['5_prime_seq'] + stitched_nt
 
@@ -392,7 +398,8 @@ def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_w
 
     if specific_args['3_prime_seq']:
         stitched_nt += specific_args['3_prime_seq']
-
+    '''
+    transl_offset = 0
     # Then finally stitch all that info together and output!
     out_bits = [specific_args['name'], used_alleles['v'], used_alleles['j'],
                 used_alleles['c'], specific_args['cdr3'], used_alleles['l'] + '(L)']
@@ -400,6 +407,8 @@ def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_w
     # TODO add information to output header if additional 5'/3' sequences specified?
     for i in done:
         done[i] = fxn.translate_nt(done[i])
+    if restriction == True:
+        stitched_nt = "GGATCC" + stitched_nt + "GTCGAC"
     return out_bits, stitched_nt, transl_offset, done
 
 

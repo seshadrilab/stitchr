@@ -468,6 +468,17 @@ def main():
             else:
                 seamless = False
             parts = []
+            Seq_5 = ""
+            Seq_3 = ""
+            restriction = False
+            if values['chk_restriction']:
+                if values['chk_linker']:
+                    Seq_5 = "GGATCC"
+                    Seq_3 = "GTCGAC"
+                    restriction = False
+                else:
+                    restriction = True
+
             # Then stitch each individual chain...
             for ref_chain in ['TR1', 'TR2']:
                 chain = convert_chains[receptor][ref_chain]
@@ -528,7 +539,7 @@ def main():
                             outputs[ref_chain + '_out_list'], \
                             outputs[ref_chain + '_stitched'], \
                             outputs[ref_chain + '_offset'], region = st.stitch(tcr_bits, tcr_dat, functionality,
-                                                                       partial, codons, 3, preferred)
+                                                                       partial, codons, 3, preferred, ref_chain, restriction)
 
                             outputs[ref_chain + '_out_str'] = '|'.join(outputs[ref_chain + '_out_list'])
                             outputs[ref_chain + '_fasta'] = fxn.fastafy('nt|' + outputs[ref_chain + '_out_str'],
@@ -574,9 +585,9 @@ def main():
                                                                 "but not provided")
 
                             outputs['linker_seq'] = fxn.get_linker_seq(outputs['linker'], linkers)
-                            outputs['linked'] = outputs['TR' + tr1 + '_stitched'] + \
+                            outputs['linked'] = Seq_5 + outputs['TR' + tr1 + '_stitched'] + \
                                                 outputs['linker_seq'] + \
-                                                outputs['TR' + tr2 + '_stitched']
+                                                outputs['TR' + tr2 + '_stitched'] + Seq_3
 
                             outputs['linked_header'] = '_'.join([outputs['TR' + tr1 + '_out_str'],
                                                                  outputs['linker'],
