@@ -101,9 +101,9 @@ def display(nt, parts, linker=[]):
     sg.set_options(font=font1)
 
     layout = [
-        [sg.Multiline(aa, size=(100, 10), key='-Multiline')],
-        [sg.Multiline(legend, size=(100, 1), key='-Legend')],
-        [sg.Push(), sg.Button('Highlight'), sg.Button('Exit'), sg.Button('NT'), sg.Button('AA')],
+        [sg.Multiline(aa, size=(100, 10), key='-Multiline', disabled=True)],
+        [sg.Multiline(legend, size=(100, 1), key='-Legend', disabled=True)],
+        [sg.Push(), sg.Button('Highlight'), sg.Button('Exit'), sg.Button('NT'), sg.Button('AA', disabled=True)],
     ]
 
     window = sg.Window('Sequence Display', layout, finalize=True)
@@ -122,11 +122,18 @@ def display(nt, parts, linker=[]):
             l_widget = get_highlights(l_widget, l_indexes, font2)
             window['-Multiline'].update(disabled=True)
             window['-Legend'].update(disabled=True)
+            window['Highlight'].update(disabled=True)
         elif event == 'NT':
              window['-Multiline'].update(nt)
+             window['NT'].update(disabled=True)
+             window['AA'].update(disabled=False)
+             window['Highlight'].update(disabled=False)
              m_indexes = nt_m_indexes
         elif event == 'AA':
              window['-Multiline'].update(aa)
+             window['NT'].update(disabled=False)
+             window['AA'].update(disabled=True)
+             window['Highlight'].update(disabled=False)
              m_indexes = aa_m_indexes
 
     window.close()
