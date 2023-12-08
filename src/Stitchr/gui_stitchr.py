@@ -554,7 +554,7 @@ def main():
                             outputs[ref_chain + '_stitched'], \
                             outputs[ref_chain + '_offset'] = st.stitch(tcr_bits, tcr_dat, functionality,
                                                                        partial, codons, 3, preferred, 
-                                                                       ref_chain, restriction,
+                                                                       restriction,
                                                                        mouse_c, frame_dat)
 
                             outputs[ref_chain + '_out_str'] = '|'.join(outputs[ref_chain + '_out_list'])
