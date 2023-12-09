@@ -372,11 +372,6 @@ def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_w
 
         done['v'] = done['v'][:len(done['v'])-(cdr3_n_offset)*3]
 
-        c_index = (c_term_nt_trimmed.index(done['c'][:100]))
-        c_seq = c_term_nt_trimmed[c_index:]
-        modulus = len(c_seq)%3
-        done['c'] = c_seq[modulus:]
-        done['j'] = c_term_nt_trimmed[:c_index+modulus]
         # Then finally stitch all that info together and output!
         if mouse_c:
             # Find where the constant region starts and exclude that to get just the J
@@ -394,9 +389,19 @@ def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_w
                 trimmed_j = j_term
             # Put the parts together
             stitched_nt = n_term_nt_trimmed + non_templated_nt + trimmed_j + mouse_c[1]
+
             # Update constant region used
             used_alleles['c'] = mouse_c[0]
+
+            # Update the c portion for highlighting
+            done['c'] = mouse_c[1]
+            done['j'] = trimmed_j
         else:
+            c_index = (c_term_nt_trimmed.index(done['c'][:100]))
+            c_seq = c_term_nt_trimmed[c_index:]
+            modulus = len(c_seq)%3
+            done['c'] = c_seq[modulus:]
+            done['j'] = c_term_nt_trimmed[:c_index+modulus]
             stitched_nt = n_term_nt_trimmed + non_templated_nt + c_term_nt_trimmed
 
     # Constitutive call to a restriction site checker
