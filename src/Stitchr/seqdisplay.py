@@ -15,8 +15,6 @@ def get_partlist(chains, linker):
     parts.append(linker)
     names.append("Start")
     parts.append('M')
-    names.append('End')
-    parts.append('*')
     return names, parts
 
 
