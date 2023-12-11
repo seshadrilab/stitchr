@@ -15,6 +15,8 @@ def get_partlist(chains, linker):
     parts.append(linker)
     names.append("Start")
     parts.append('M')
+    names.append("End")
+    parts.append('*')
     return names, parts
 
 
@@ -29,7 +31,7 @@ def get_indexes(seq, name, part, a=1):
     index2s = []
     for name, part in parts:
         if part in seq:
-            if name == 'Start':
+            if name == 'Start' or name == 'End':
                 start = seq.index(part)
                 index1s.append(f'1.{a*start}')
                 index2s.append(f'1.{a*(start + 1)}')
