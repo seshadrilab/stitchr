@@ -102,7 +102,7 @@ def args():
     return parser.parse_args()
 
 
-def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_warning_threshold, preferences, ref_chain, restriction):
+def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_warning_threshold, preferences, restriction):
     """
     Core function, that performs the actual TCR stitching
     :param specific_args: basic input arguments of a given rearrangement (e.g. V/J/CDR3)
