@@ -613,7 +613,7 @@ def main():
                 if warning_msgs['linked_out']:
                     window['linked_log'].update(warning_msgs['linked_out'])
 
-                if seamless == False:
+                elif seamless == False:
                     sd.display(outputs['linked'], parts, fxn.translate_nt(outputs['linker_seq']))
             # Re-enable stitchr button once completed
             window['Run Stitchr'].update(disabled=False)
