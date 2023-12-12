@@ -3,6 +3,11 @@ import re
 from . import stitchrfunctions as fxn
 
 def get_partlist(chains, linker):
+    """
+    param chains: A list of dictionary of amino acids and their associated lables (v, j, c, CDR3)
+    param linker: A string of amino acids that connects the two TCRs in sequence
+    return: names, a list of different parts to highlight.  parts, an ordered list of different amino acid chains associated with names
+    """
     TR = 0
     parts = []
     names = []
@@ -22,8 +27,11 @@ def get_partlist(chains, linker):
 
 def get_indexes(seq, name, part, a=1):
     """
-    Input: A string DNA sequence and a dictionary of gene regions and their DNA sequence
-    Output: A list of tuples where each gene region occurs in DNA sequence
+    param seq: A string amino acid sequence representing our stitched TCR
+    param name: A list of named parts to highlight
+    param part: A list of different amino acid sequences that correspond to names in name list
+    param a: defaults to 1.  Is used as a modifier depending on whether in NT mode (a=3) or AA mode (a=1), changes positions to highlight
+    return: zipped list of named sequences that show up in the stitched TCR and the positions to highight (start and end indexes)
     """
     parts = list(zip(name, part))
     names = []
@@ -46,6 +54,12 @@ def get_indexes(seq, name, part, a=1):
 
 
 def get_highlights(widget, indexes, fonts):
+    """
+    param widget: a module used to store information for different box windows ('-Multiline' and '-Legend')
+    param indexes: a zipped list name, index1, index2 format to highlight different sections different colors
+    param fonts: font settings for widget to use when adding highlight tags
+    return: Widget with new highlight tags
+    """
     for name, index1, index2 in indexes:
                     # Make it so that a value is stored in indexes that will check against defined (v, j, cdr3, c, start, stop)
                     if "_cdr3" in name:
@@ -76,17 +90,23 @@ def get_highlights(widget, indexes, fonts):
 
 def display(nt, parts, linker=[]):
     """
-    Input: A string DNA sequence and a dictionary of gene regions and their DNA sequence
-    Output: A GUI display of the DNA sequence that highlights different regions
+    Param tn: A string nt DNA sequence
+    Param parts: a dictionary of gene regions and their DNA Amino Acid sequence
+    Dispaly: A GUI display of the DNA sequence that highlights different regions
     """
     aa = fxn.translate_nt(nt)
+
+    # Turn dictionary of parts into usable lists
     m_name, m_part = get_partlist(parts, linker)
 
+    # Get different indexes to highlight depending on whether user wants NT or AA display
     nt_m_indexes = get_indexes(aa, m_name, m_part, 3)
     aa_m_indexes = get_indexes(aa, m_name, m_part, 1)
 
+    # Default mode will display in aa, so loading aa indexes
     m_indexes = aa_m_indexes
 
+    # Setting up parts relating to Legend display and highlighting
     legend = "leader seqeunce | Linker sequence | cdr3 sequence | v region | j region | c region | Start | End"
     l_name = []
     l_part = []
@@ -95,24 +115,27 @@ def display(nt, parts, linker=[]):
         l_part.append(i)
     l_indexes = get_indexes(legend, l_name, l_part)
 
+    # Setting up theme of window
     sg.theme('DarkBlue3')
     font1 = ('Courier New', 10)
     font2 = ('Courier New', 10, 'bold')
     sg.set_options(font=font1)
 
+    # Setting the layout of buttons and display fields
     layout = [
         [sg.Multiline(aa, size=(100, 10), key='-Multiline', disabled=True)],
         [sg.Multiline(legend, size=(100, 1), key='-Legend', disabled=True)],
         [sg.Push(), sg.Button('Highlight'), sg.Button('Exit'), sg.Button('NT'), sg.Button('AA', disabled=True)],
     ]
 
+    # Setting up the window and interactice widgets
     window = sg.Window('Sequence Display', layout, finalize=True)
     multiline = window['-Multiline']
     legend = window['-Legend']
     m_widget = multiline.Widget
     l_widget = legend.Widget
 
-    mode = 1
+    # Window loop to update with changing user input
     while True:
         event, values = window.read()
         if event in (sg.WIN_CLOSED, 'Exit'):
