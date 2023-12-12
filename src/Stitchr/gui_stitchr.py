@@ -478,7 +478,6 @@ def main():
                 if values['chk_linker']:
                     Seq_5 = "GGATCC" # BamHI sequence
                     Seq_3 = "GTCGAC" # SalI sequence
-                    restriction = False
                 else:
                     # If product is 'unlinked' used to tell stitchr.py to add sites for individual TCRs before returning
                     restriction = True
