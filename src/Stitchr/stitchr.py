@@ -435,7 +435,7 @@ def main():
     else:
         preferred_alleles = {}
 
-    out_list, stitched, offset = stitch(input_args, imgt_dat, tcr_functionality, partial, codons,
+    out_list, stitched, offset, done = stitch(input_args, imgt_dat, tcr_functionality, partial, codons,
                                         input_args['j_warning_threshold'], preferred_alleles)
     out_str = '|'.join(out_list)
 
