@@ -468,16 +468,19 @@ def main():
                 seamless = True
             else:
                 seamless = False
-            parts = []
+
+            parts = []  # Used to store parts of sequence handed off to seq_display
             Seq_5 = ""
             Seq_3 = ""
             restriction = False
+            # Check if restrictions selected
             if values['chk_restriction']:
                 if values['chk_linker']:
-                    Seq_5 = "GGATCC"
-                    Seq_3 = "GTCGAC"
+                    Seq_5 = "GGATCC" # BamHI sequence
+                    Seq_3 = "GTCGAC" # SalI sequence
                     restriction = False
                 else:
+                    # If product is 'unlinked' used to tell stitchr.py to add sites for individual TCRs before returning
                     restriction = True
 
             # Then stitch each individual chain...
