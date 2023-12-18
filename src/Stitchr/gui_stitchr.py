@@ -557,7 +557,9 @@ def main():
 
                 warning_msgs[ref_chain + '_out'] += ''.join([str(chain_log[x].message) for x in range(len(chain_log))
                                                         if 'DeprecationWarning' not in str(chain_log[x].category)])
-
+                if not values['chk_linker']:
+                    #print(parts)
+                    sd.display(outputs[ref_chain+'_stitched'], parts, "")
                 window[ref_chain + '_log'].update(warning_msgs[ref_chain + '_out'])
 
             # ... and if asked for, link together
