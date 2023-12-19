@@ -306,7 +306,7 @@ def main():
         [sg.InputText('', key='TR1_5_prime_seq', size=half_sz),
          sg.InputText('', key='TR1_3_prime_seq', size=half_sz)],
 
-        [sg.Text('TRA out', key='TR1_out_title_text')],
+        [sg.Text('TRA out', key='TR1_out_title_text'), sg.Button("Highlight", size=quart_sz, disabled=True, key="TR1_Highlight")],
         [sg.MLine(default_text='', size=(box_width - 9, 20), key='TR1_out', font=out_box_font)],
 
         [sg.Text('TRA log', key='TR1_log_title_text')],
@@ -336,7 +336,7 @@ def main():
         [sg.InputText('', key='TR2_5_prime_seq', size=half_sz),
          sg.InputText('', key='TR2_3_prime_seq', size=half_sz)],
 
-        [sg.Text('TRB out', key='TR2_out_title_text')],
+        [sg.Text('TRB out', key='TR2_out_title_text'), sg.Button("Highlight", size=quart_sz, disabled=True, key="TR2_Highlight")],
         [sg.MLine(default_text='', size=(box_width - 9, 20), key='TR2_out', font=out_box_font)],
 
         [sg.Text('TRB log', key='TR2_log_title_text')],
@@ -558,8 +558,7 @@ def main():
                 warning_msgs[ref_chain + '_out'] += ''.join([str(chain_log[x].message) for x in range(len(chain_log))
                                                         if 'DeprecationWarning' not in str(chain_log[x].category)])
                 if not values['chk_linker']:
-                    #print(parts)
-                    sd.display(outputs[ref_chain+'_stitched'], parts, "")
+                    window[ref_chain+'_Highlight'].update(disabled=False)
                 window[ref_chain + '_log'].update(warning_msgs[ref_chain + '_out'])
 
             # ... and if asked for, link together
@@ -618,6 +617,14 @@ def main():
                     sd.display(outputs['linked'], parts, fxn.translate_nt(outputs['linker_seq']))
             # Re-enable stitchr button once completed
             window['Run Stitchr'].update(disabled=False)
+
+        elif event == 'TR1_Highlight':
+            sd.display(outputs['TR1_stitched'], parts, "")
+            window['TR1_Highlight'].update(disabled=True)
+
+        elif event == 'TR2_Highlight':
+            sd.display(outputs['TR2_stitched'], parts, "")
+            window['TR2_Highlight'].update(disabled=True)
 
         elif event == 'Export output':
 
