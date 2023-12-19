@@ -383,21 +383,21 @@ def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_w
     sites = fxn.check_restricts(stitched_nt, enzymes)
     stitched_nt = fxn.wobble(stitched_nt, sites, enzymes)
 
-    # If optional 5'/3' sequences are specified, add them to the relevant place
+    #If optional 5'/3' sequences are specified, add them to the relevant place
 
-    # if specific_args['5_prime_seq']:
-    #     stitched_nt = specific_args['5_prime_seq'] + stitched_nt
+    if specific_args['5_prime_seq']:
+        stitched_nt = specific_args['5_prime_seq'] + stitched_nt
 
-    #     # Translation offset allows simple translation of output NT without having to figure out the frame
-    #     transl_offset = 3 - (len(specific_args['5_prime_seq']) % 3)
-    #     if transl_offset == 3:
-    #         transl_offset = 0
+        # Translation offset allows simple translation of output NT without having to figure out the frame
+        transl_offset = 3 - (len(specific_args['5_prime_seq']) % 3)
+        if transl_offset == 3:
+            transl_offset = 0
 
-    # else:
-    #     transl_offset = 0
+    else:
+        transl_offset = 0
 
-    # if specific_args['3_prime_seq']:
-    #     stitched_nt += specific_args['3_prime_seq']
+    if specific_args['3_prime_seq']:
+        stitched_nt += specific_args['3_prime_seq']
 
     transl_offset = 0
     # Then finally stitch all that info together and output!
