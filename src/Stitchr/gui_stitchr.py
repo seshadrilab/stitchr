@@ -386,6 +386,8 @@ def main():
 
                 receptor, species = upload_tcr_details(os.path.join(examples_path, example_matches[0]),
                                                        receptor, species)
+            window['TR2_Highlight'].update(disabled=True)
+            window['TR1_Highlight'].update(disabled=True)
 
         elif event == 'change_receptor':
 
@@ -412,6 +414,8 @@ def main():
             # Reset preferred alleles
             values['find_preferred_alleles'] = ''
             window['preferred_allele_button'].update(preferred_button_default)
+            window['TR2_Highlight'].update(disabled=True)
+            window['TR1_Highlight'].update(disabled=True)
 
         elif event == 'Upload TCR details':
 
