@@ -88,7 +88,7 @@ def get_highlights(widget, indexes, fonts):
                         widget.tag_add('BROWN', index1, index2)
     return widget
 
-def display(nt, parts, linker=[]):
+def display(nt, parts, linker=[], linked=False):
     """
     Param tn: A string nt DNA sequence
     Param parts: a dictionary of gene regions and their DNA Amino Acid sequence
@@ -121,9 +121,13 @@ def display(nt, parts, linker=[]):
     font2 = ('Courier New', 10, 'bold')
     sg.set_options(font=font1)
 
+    if linked == True:
+        height = 20
+    else:
+        height = 10
     # Setting the layout of buttons and display fields
     layout = [
-        [sg.Multiline(aa, size=(100, 10), key='-Multiline', disabled=True)],
+        [sg.Multiline(aa, size=(100, height), key='-Multiline', disabled=True)],
         [sg.Multiline(legend, size=(100, 1), key='-Legend', disabled=True)],
         [sg.Push(), sg.Button('Highlight'), sg.Button('Exit'), sg.Button('NT'), sg.Button('AA', disabled=True)],
     ]
