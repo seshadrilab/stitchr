@@ -88,7 +88,7 @@ def get_highlights(widget, indexes, fonts):
                         widget.tag_add('BROWN', index1, index2)
     return widget
 
-def display(nt, parts, linker=[], linked=False):
+def display(nt, parts="", linker="", linked=False):
     """
     Param tn: A string nt DNA sequence
     Param parts: a dictionary of gene regions and their DNA Amino Acid sequence
@@ -107,7 +107,7 @@ def display(nt, parts, linker=[], linked=False):
     m_indexes = aa_m_indexes
 
     # Setting up parts relating to Legend display and highlighting
-    legend = "leader seqeunce | Linker sequence | cdr3 sequence | v region | j region | c region | Start | End"
+    legend = "leader sequence | Linker sequence | cdr3 sequence | v region | j region | c region | Start | End"
     l_name = []
     l_part = []
     for i in legend.split(' | '):
@@ -132,7 +132,7 @@ def display(nt, parts, linker=[], linked=False):
         [sg.Push(), sg.Button('Highlight'), sg.Button('Exit'), sg.Button('NT'), sg.Button('AA', disabled=True)],
     ]
 
-    # Setting up the window and interactice widgets
+    # Setting up the window and interactive widgets
     window = sg.Window('Sequence Display', layout, finalize=True)
     multiline = window['-Multiline']
     legend = window['-Legend']
