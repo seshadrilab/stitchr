@@ -381,7 +381,7 @@ def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_w
     # Constitutive call to a restriction site checker
     enzymes = ['BamHI', 'SalI']
     sites = fxn.check_restricts(stitched_nt, enzymes)
-    stitched_nt = fxn.wobble(stitched_nt, sites, enzymes)
+    stitched_nt, check = fxn.wobble(stitched_nt, sites, enzymes)
 
     #If optional 5'/3' sequences are specified, add them to the relevant place
 
@@ -410,7 +410,7 @@ def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_w
         done[i] = fxn.translate_nt(done[i])
     if restriction == True:
         stitched_nt = "GGATCC" + stitched_nt + "GTCGAC"
-    return out_bits, stitched_nt, transl_offset, done
+    return out_bits, stitched_nt, transl_offset, done, check
 
 
 gene_types = list(fxn.regions.values())

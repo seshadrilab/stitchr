@@ -545,14 +545,14 @@ def main():
                             # Run the stitching
                             outputs[ref_chain + '_out_list'], \
                             outputs[ref_chain + '_stitched'], \
-                            outputs[ref_chain + '_offset'], region = st.stitch(tcr_bits, tcr_dat, functionality,
+                            outputs[ref_chain + '_offset'], region, check = st.stitch(tcr_bits, tcr_dat, functionality,
                                                                        partial, codons, 3, preferred, restriction)
-
                             outputs[ref_chain + '_out_str'] = '|'.join(outputs[ref_chain + '_out_list'])
                             outputs[ref_chain + '_fasta'] = fxn.fastafy('nt|' + outputs[ref_chain + '_out_str'],
                                                                         outputs[ref_chain + '_stitched'])
                             window[ref_chain + '_out'].update(outputs[ref_chain + '_fasta'])
                             parts.append(region)
+                            warning_msgs[ref_chain+'_out'] = '  '.join([str(check[x]) for x in range(len(check))])
                         except Exception as message:
                             warning_msgs[ref_chain + '_out'] = str(message)
 
