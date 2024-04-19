@@ -556,7 +556,6 @@ def main():
                             # Run the stitching
                             outputs[ref_chain + '_out_list'], \
                             outputs[ref_chain + '_stitched'], \
-
                             outputs[ref_chain + '_offset'], region, check = st.stitch(tcr_bits, tcr_dat, functionality,
                                                                        partial, codons, 3, preferred, restriction, mouse_c, frame_dat)
 
