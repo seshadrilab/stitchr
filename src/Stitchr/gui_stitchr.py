@@ -556,10 +556,8 @@ def main():
                             # Run the stitching
                             outputs[ref_chain + '_out_list'], \
                             outputs[ref_chain + '_stitched'], \
-
                             outputs[ref_chain + '_offset'], region, check = st.stitch(tcr_bits, tcr_dat, functionality,
                                                                        partial, codons, 3, preferred, restriction, mouse_c, frame_dat)
-
                             outputs[ref_chain + '_out_str'] = '|'.join(outputs[ref_chain + '_out_list'])
                             outputs[ref_chain + '_fasta'] = fxn.fastafy('nt|' + outputs[ref_chain + '_out_str'],
                                                                         outputs[ref_chain + '_stitched'])
