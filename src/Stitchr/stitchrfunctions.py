@@ -287,6 +287,9 @@ def get_imgt_data(tcr_chain, gene_types, species):
     functionality = coll.defaultdict(nest)
     partial_genes = coll.defaultdict(nest)
 
+    # Store frame info
+    frame_dat = {}
+
     with open(in_file_path, 'r') as in_file:
         for fasta_id, seq, blank in read_fa(in_file):
             bits = fasta_id.split('|')
@@ -297,6 +300,10 @@ def get_imgt_data(tcr_chain, gene_types, species):
             functionality_call = bits[3]
             seq_type = fasta_id.split('~')[1]
             partial_flag = bits[13]
+            frame = bits[7]
+
+            # Use full gene name
+            frame_dat[bits[1]] = frame
 
             functionality[gene][allele] = functionality_call
 
@@ -309,7 +316,7 @@ def get_imgt_data(tcr_chain, gene_types, species):
         if len(tcr_data[gene_type]) == 0:
             raise Exception("No entries for " + gene_type + " in IMGT data. ")
 
-    return tcr_data, functionality, partial_genes
+    return tcr_data, functionality, partial_genes, frame_dat
 
 
 def strip_functionality(functionality_str):
@@ -327,7 +334,7 @@ def get_additional_genes(imgt_data, imgt_functionality):
     :return: the same dicts supplemented with any genes found in the 'additional genes.fasta' file
     """
 
-    with open(data_dir + 'additional-genes.fasta', 'r') as in_file:
+    with open(os.path.join(data_dir, 'additional-genes.fasta'), 'r') as in_file:
         for fasta_id, seq, blank in read_fa(in_file):
             bits = fasta_id.split('|')
 

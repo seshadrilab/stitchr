@@ -102,8 +102,9 @@ def args():
     return parser.parse_args()
 
 
-def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_warning_threshold, preferences, restriction=False):
-    """
+
+def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_warning_threshold, preferences, mouse_c, frame_dat, restriction=False):
+    """                                                                            
     Core function, that performs the actual TCR stitching
     :param specific_args: basic input arguments of a given rearrangement (e.g. V/J/CDR3)
     :param tcr_info: sequence data for the alleles of a specific locus read in from IMGT data
@@ -112,6 +113,7 @@ def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_w
     :param codon_dict: dictionary of which codons to use for which amino acids
     :param j_warning_threshold: int threshold value, if a J substring length match is shorter it will throw a warning
     :param preferences: nested dict of preferred alleles, like the tcr_info dict but one level shallower
+    :param use_mouse_c: whether or not to use custom mouse constant region (default for human alpha-beta)
     :return: list of details of the TCR as constructed,
              plus the stitched together nucleotide sequence (str) and translation offset (int, 0/1/2)
     """
@@ -370,13 +372,37 @@ def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_w
 
         done['v'] = done['v'][:len(done['v'])-(cdr3_n_offset)*3]
 
-        c_index = (c_term_nt_trimmed.index(done['c'][:100]))
-        c_seq = c_term_nt_trimmed[c_index:]
-        modulus = len(c_seq)%3
-        done['c'] = c_seq[modulus:]
-        done['j'] = c_term_nt_trimmed[:c_index+modulus]
+        # Then finally stitch all that info together and output!
+        if mouse_c:
+            # Find where the constant region starts and exclude that to get just the J
+            constant_start = c_term_nt_trimmed.index(done['c'][:100])
+            j_term = c_term_nt_trimmed[:constant_start]
+            # Get frame of J gene and remove extra nucleotides from the end
+            j_frame = int(frame_dat[used_alleles['j']]) - 1  # Subtract to make 0-based
+            # Figure how how many nucleotides to remove
+            orig_j = done['j'][j_frame:]
+            n_to_trim = len(orig_j) % 3
+            # Remove extra nucleotides at end of CDR3+J
+            if n_to_trim > 0:
+                trimmed_j = j_term[:-n_to_trim]
+            elif n_to_trim == 0:
+                trimmed_j = j_term
+            # Put the parts together
+            stitched_nt = n_term_nt_trimmed + non_templated_nt + trimmed_j + mouse_c[1]
 
-        stitched_nt = n_term_nt_trimmed + non_templated_nt + c_term_nt_trimmed
+            # Update constant region used
+            used_alleles['c'] = mouse_c[0]
+
+            # Update the c portion for highlighting
+            done['c'] = mouse_c[1]
+            done['j'] = trimmed_j
+        else:
+            c_index = (c_term_nt_trimmed.index(done['c'][:100]))
+            c_seq = c_term_nt_trimmed[c_index:]
+            modulus = len(c_seq)%3
+            done['c'] = c_seq[modulus:]
+            done['j'] = c_term_nt_trimmed[:c_index+modulus]
+            stitched_nt = n_term_nt_trimmed + non_templated_nt + c_term_nt_trimmed
 
     # Constitutive call to a restriction site checker
     enzymes = ['BamHI', 'SalI']
@@ -421,7 +447,7 @@ def main():
     # Get input arguments, determine the TCR chain in use, get codon table, then load the IMGT data in
     input_args, chain = fxn.sort_input(vars(args()))
     codons = fxn.get_optimal_codons(input_args['codon_usage_path'], input_args['species'])
-    imgt_dat, tcr_functionality, partial = fxn.get_imgt_data(chain, gene_types, input_args['species'])
+    imgt_dat, tcr_functionality, partial, frame_dat = fxn.get_imgt_data(chain, gene_types, input_args['species'])
 
     if input_args['suppress_warnings']:
         warnings.filterwarnings('ignore')
@@ -436,8 +462,20 @@ def main():
     else:
         preferred_alleles = {}
 
+    # Determine if we'll use default mouse constant region (for human alpha-beta)
+    raw_args = vars(args())
+    if raw_args['species'] == 'HUMAN' and not raw_args['c']:
+        if chain == 'TRA':
+            mouse_c = ('TRAC*00', imgt_dat['CONSTANT']['TRAC']['00'])
+        elif chain == 'TRB':
+            mouse_c = ('TRBC*00', imgt_dat['CONSTANT']['TRBC']['00'])
+        else:
+            mouse_c = ''
+
     out_list, stitched, offset, done = stitch(input_args, imgt_dat, tcr_functionality, partial, codons,
-                                        input_args['j_warning_threshold'], preferred_alleles)
+                                        input_args['j_warning_threshold'], preferred_alleles,
+                                        mouse_c, frame_dat)
+    
     out_str = '|'.join(out_list)
 
     # Output the appropriate strings to stdout
