@@ -306,7 +306,7 @@ def main():
         [sg.InputText('', key='TR1_5_prime_seq', size=half_sz),
          sg.InputText('', key='TR1_3_prime_seq', size=half_sz)],
 
-        [sg.Text('TRA out', key='TR1_out_title_text')],
+        [sg.Text('TRA out', key='TR1_out_title_text'), sg.Button("Highlight", size=quart_sz, disabled=True, key="TR1_Highlight")],
         [sg.MLine(default_text='', size=(box_width - 9, 20), key='TR1_out', font=out_box_font)],
 
         [sg.Text('TRA log', key='TR1_log_title_text')],
@@ -336,7 +336,7 @@ def main():
         [sg.InputText('', key='TR2_5_prime_seq', size=half_sz),
          sg.InputText('', key='TR2_3_prime_seq', size=half_sz)],
 
-        [sg.Text('TRB out', key='TR2_out_title_text')],
+        [sg.Text('TRB out', key='TR2_out_title_text'), sg.Button("Highlight", size=quart_sz, disabled=True, key="TR2_Highlight")],
         [sg.MLine(default_text='', size=(box_width - 9, 20), key='TR2_out', font=out_box_font)],
 
         [sg.Text('TRB log', key='TR2_log_title_text')],
@@ -387,6 +387,8 @@ def main():
 
                 receptor, species = upload_tcr_details(os.path.join(examples_path, example_matches[0]),
                                                        receptor, species)
+            window['TR2_Highlight'].update(disabled=True)
+            window['TR1_Highlight'].update(disabled=True)
 
         elif event == 'change_receptor':
 
@@ -413,6 +415,8 @@ def main():
             # Reset preferred alleles
             values['find_preferred_alleles'] = ''
             window['preferred_allele_button'].update(preferred_button_default)
+            window['TR2_Highlight'].update(disabled=True)
+            window['TR1_Highlight'].update(disabled=True)
 
         elif event == 'Upload TCR details':
 
@@ -469,16 +473,18 @@ def main():
                 seamless = True
             else:
                 seamless = False
-            parts = []
+
+            parts = []  # Used to store parts of sequence handed off to seq_display
             Seq_5 = ""
             Seq_3 = ""
             restriction = False
+            # Check if restrictions selected
             if values['chk_restriction']:
                 if values['chk_linker']:
-                    Seq_5 = "GGATCC"
-                    Seq_3 = "GTCGAC"
-                    restriction = False
+                    Seq_5 = "GGATCC" # BamHI sequence
+                    Seq_3 = "GTCGAC" # SalI sequence
                 else:
+                    # If product is 'unlinked' used to tell stitchr.py to add sites for individual TCRs before returning
                     restriction = True
 
             # Then stitch each individual chain...
@@ -550,16 +556,16 @@ def main():
                             # Run the stitching
                             outputs[ref_chain + '_out_list'], \
                             outputs[ref_chain + '_stitched'], \
-                            outputs[ref_chain + '_offset'], region = st.stitch(tcr_bits, tcr_dat, functionality,
-                                                                       partial, codons, 3, preferred, 
-                                                                       restriction,
-                                                                       mouse_c, frame_dat)
+
+                            outputs[ref_chain + '_offset'], region, check = st.stitch(tcr_bits, tcr_dat, functionality,
+                                                                       partial, codons, 3, preferred, restriction, mouse_c, frame_dat)
 
                             outputs[ref_chain + '_out_str'] = '|'.join(outputs[ref_chain + '_out_list'])
                             outputs[ref_chain + '_fasta'] = fxn.fastafy('nt|' + outputs[ref_chain + '_out_str'],
                                                                         outputs[ref_chain + '_stitched'])
                             window[ref_chain + '_out'].update(outputs[ref_chain + '_fasta'])
                             parts.append(region)
+                            warning_msgs[ref_chain+'_out'] = '  '.join([str(check[x]) for x in range(len(check))])
                         except Exception as message:
                             warning_msgs[ref_chain + '_out'] = str(message)
 
@@ -568,7 +574,8 @@ def main():
 
                 warning_msgs[ref_chain + '_out'] += ''.join([str(chain_log[x].message) for x in range(len(chain_log))
                                                         if 'DeprecationWarning' not in str(chain_log[x].category)])
-
+                if not values['chk_linker']:
+                    window[ref_chain+'_Highlight'].update(disabled=False)
                 window[ref_chain + '_log'].update(warning_msgs[ref_chain + '_out'])
 
             # ... and if asked for, link together
@@ -623,10 +630,18 @@ def main():
                 if warning_msgs['linked_out']:
                     window['linked_log'].update(warning_msgs['linked_out'])
 
-                if seamless == False:
-                    sd.display(outputs['linked'], parts, fxn.translate_nt(outputs['linker_seq']))
+                elif seamless == False:
+                    sd.display(outputs['linked'], parts, fxn.translate_nt(outputs['linker_seq']), True)
             # Re-enable stitchr button once completed
             window['Run Stitchr'].update(disabled=False)
+
+        elif event == 'TR1_Highlight':
+            sd.display(outputs['TR1_stitched'], parts, "")
+            window['TR1_Highlight'].update(disabled=True)
+
+        elif event == 'TR2_Highlight':
+            sd.display(outputs['TR2_stitched'], parts, "")
+            window['TR2_Highlight'].update(disabled=True)
 
         elif event == 'Export output':
 

@@ -910,6 +910,7 @@ def wobble(sequence, sites, enzymes):
     param enzymes: a list of relavent enzymes
     return: string nt sequence that has synonymous AA sequence to input
     """
+    messages = []
     for i in sites:
         while len(sites[i]) > 0:
             site = i.site
@@ -926,14 +927,23 @@ def wobble(sequence, sites, enzymes):
             elif(seq_len % 3) == 2:
                 r_index = r_index - 2
 
-            site = sequence[r_index: r_index+site_len]
-            sequence = sequence[:r_index] + replace_codon(site) + sequence[r_index+site_len:]
+            #Swap nucleotide sequence
+            end = r_index+site_len
+            site = sequence[r_index: end]
+            replace = replace_codon(site)
+            sequence = sequence[:r_index] + replace + sequence[end:]
+
+            #Add a warning message
+            Warn = ('  Warning: at position ' + str(r_index) + ' ' + site + ' was replaced with ' + replace + ', maintaining ' + translate_nt(site) + ' amino acid translation in sequence due to restriction site overlap.')
+            messages.append(Warn)
+
+            #Update loop
             sites = check_restricts(sequence, enzymes)
     # Recheck
     for i in sites:
         if len(sites[i]) > 0:
             sequence = wobble(sequence, sites, enzymes)
-    return sequence
+    return sequence, messages
 
 def replace_codon(seq):
     """
