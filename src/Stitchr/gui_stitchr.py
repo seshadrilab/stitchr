@@ -547,9 +547,9 @@ def main():
                             mouse_c = ''
                             if species == 'HUMAN' and not values_raw[ref_chain + 'C']:
                                 if chain == 'TRA':
-                                    mouse_c = ('TRAC*00', tcr_dat['CONSTANT']['TRAC']['00'])
+                                    mouse_c = ('TRAC*00', 'gacattcagaacccggaaccggctgtataccagctgaaggacccccgatctcaggatagtactctgtgcctgttcaccgactttgatagtcagatcaatgtgcctaaaaccatggaatccggaacttttattaccgacaagtgcgtgctggatatgaaagccatggacagtaagtcaaacggcgccatcgcttggagcaatcagacatccttcacttgccaggatatcttcaaggagaccaacgcaacatacccatcctctgacgtgccctgtgatgccaccctgacagagaagtctttcgaaacagacatgaacctgaattttcagaatctgagcgtgatgggcctgagaatcctgctgctgaaggtcgctgggtttaatctgctgatgacactgcggctgtggtcctca'.upper())
                                 elif chain == 'TRB':
-                                    mouse_c = ('TRBC*00', tcr_dat['CONSTANT']['TRBC']['00'])
+                                    mouse_c = ('TRBC*00', 'gaagatctacgtaacgtgacaccacccaaagtctcactgtttgagcctagcaaggcagaaattgccaacaagcagaaggccaccctggtgtgcctggcaagagggttctttccagatcacgtggagctgtcctggtgggtcaacggcaaagaagtgcattctggggtctgcaccgacccccaggcttacaaggagagtaattactcatattgtctgtcaagccggctgagagtgtccgccacattctggcacaaccctaggaatcatttccgctgccaggtccagtttcacggcctgagtgaggaagataaatggccagaggggtcacctaagccagtgacacagaacatcagcgcagaagcctggggacgagcagactgtggcattactagcgcctcctatcatcagggcgtgctgagcgccactatcctgtacgagattctgctgggaaaggccaccctgtatgctgtgctggtctccggcctggtgctgatggccatggtcaagaaaaagaactct'.upper())
                                 else:
                                     mouse_c = ''
 
