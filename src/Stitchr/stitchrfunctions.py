@@ -934,7 +934,7 @@ def wobble(sequence, sites, enzymes):
             sequence = sequence[:r_index] + replace + sequence[end:]
 
             #Add a warning message
-            Warn = ('  Warning: at position ' + str(r_index) + ' ' + site + ' was replaced with ' + replace + ', maintaining ' + translate_nt(site) + ' amino acid translation in sequence due to restriction site overlap.')
+            Warn = ('Warning: Due to a detected restricted motif at position ' + str(r_index) + ' in this chain, ' + site + ' was replaced with ' + replace + ', maintaining ' + translate_nt(site) +  ' amino acid translation in sequence.')
             messages.append(Warn)
 
             #Update loop
@@ -961,6 +961,19 @@ def replace_codon(seq):
                 nt += codon
                 break
     return nt
+
+
+def report(original, stitchr):
+    """
+    param original: User input for CDR3 sequence
+    param stitchr: What stitchr used in sequence assembly
+    reutrn: message for quality control checks indicating identity status of the cdr3 region
+    """
+    if original['cdr3'] == stitchr['cdr3']:
+        message = 'Check: CDR3 AA sequence is identical in input and output.'
+    else:
+        message = 'Warning: CDR3 failed input vs. output test.'
+    return message
 
 
 def main():

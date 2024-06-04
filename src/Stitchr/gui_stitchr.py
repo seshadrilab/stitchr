@@ -558,20 +558,32 @@ def main():
                             outputs[ref_chain + '_stitched'], \
                             outputs[ref_chain + '_offset'], region, check = st.stitch(tcr_bits, tcr_dat, functionality,
                                                                        partial, codons, 3, preferred, mouse_c, frame_dat, restriction)
-
                             outputs[ref_chain + '_out_str'] = '|'.join(outputs[ref_chain + '_out_list'])
                             outputs[ref_chain + '_fasta'] = fxn.fastafy('nt|' + outputs[ref_chain + '_out_str'],
                                                                         outputs[ref_chain + '_stitched'])
                             window[ref_chain + '_out'].update(outputs[ref_chain + '_fasta'])
+
+                            # Check for Stop Codons
+                            if not values['chk_linker']:
+                                seq = fxn.translate_nt(outputs[ref_chain+'_stitched'])
+                                if restriction == True:
+                                    seq = seq[len(seq)-3]
+                                else:
+                                    seq = seq[len(seq)-1]
+                                if seq != '*':
+                                    check.append("Warning: Stop codon expected, but not found at end of sequence.")
+                                else:
+                                    check.append("Check: Stop codon successfully located.")
+
                             parts.append(region)
-                            warning_msgs[ref_chain+'_out'] = '  '.join([str(check[x]) for x in range(len(check))])
+                            warning_msgs[ref_chain+'_out'] = '\n'.join([str(check[x]) for x in range(len(check))])
                         except Exception as message:
                             warning_msgs[ref_chain + '_out'] = str(message)
 
                     elif values[ref_chain + 'V'] or values[ref_chain + 'J'] or values[ref_chain + '_CDR3']:
                         warnings.warn('V gene, J gene, and CDR3 sequence are all required to stitch a TCR chain.')
 
-                warning_msgs[ref_chain + '_out'] += ''.join([str(chain_log[x].message) for x in range(len(chain_log))
+                warning_msgs[ref_chain + '_out'] += '\n'.join([str(chain_log[x].message) for x in range(len(chain_log))
                                                         if 'DeprecationWarning' not in str(chain_log[x].category)])
                 if not values['chk_linker']:
                     window[ref_chain+'_Highlight'].update(disabled=False)
@@ -617,11 +629,20 @@ def main():
 
                             window['linked_out'].update(outputs['linked_fasta'])
 
+                            #Check for Stop Codon
+                            seq = fxn.translate_nt(outputs['linked'])
+                            if values['chk_restriction']:
+                                seq = seq[len(seq)-3]
+                            else:
+                                seq = seq[len(seq)-1]
+                            if seq != '*':
+                                warning_msgs['linked_out'] += "Warning: Stop codon expected, but not found at end of sequence."
+                            else:
+                                warning_msgs['linked_out'] += "Check: Stop codon successfully located."
                         else:
                             raise warnings.warn("Two valid chains required for linking.")
-
                     except Exception as message:
-                        warning_msgs['linked'] += str(message)
+                        warning_msgs['linked_out'] += str(message)
 
                 warning_msgs['linked_out'] += ''.join([str(link_log[x].message) for x in range(len(link_log))
                                                        if 'DeprecationWarning' not in str(link_log[x].category)])
@@ -629,7 +650,7 @@ def main():
                 if warning_msgs['linked_out']:
                     window['linked_log'].update(warning_msgs['linked_out'])
 
-                elif seamless == False:
+                if seamless == False:
                     sd.display(outputs['linked'], parts, fxn.translate_nt(outputs['linker_seq']), True)
             # Re-enable stitchr button once completed
             window['Run Stitchr'].update(disabled=False)

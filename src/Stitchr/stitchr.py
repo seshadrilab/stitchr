@@ -436,6 +436,9 @@ def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_w
         done[i] = fxn.translate_nt(done[i])
     if restriction == True:
         stitched_nt = "GGATCC" + stitched_nt + "GTCGAC"
+
+    test = fxn.report(specific_args, done)
+    check.append(test)
     return out_bits, stitched_nt, transl_offset, done, check
 
 
