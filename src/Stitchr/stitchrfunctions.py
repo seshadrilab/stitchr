@@ -963,11 +963,11 @@ def replace_codon(seq):
     return nt
 
 
-def report(original, stitchr):
+def test_cdr3(original, stitchr):
     """
     param original: User input for CDR3 sequence
     param stitchr: What stitchr used in sequence assembly
-    reutrn: message for quality control checks indicating identity status of the cdr3 region
+    return: message for quality control checks indicating identity status of the cdr3 region
     """
     if original['cdr3'] == stitchr['cdr3']:
         message = 'Check: CDR3 AA sequence is identical in input and output.'
@@ -975,6 +975,17 @@ def report(original, stitchr):
         message = 'Warning: CDR3 failed input vs. output test.'
     return message
 
+
+def test_frame(sequence):
+    """
+    param sequence: Finished stitched sequence
+    return: message for quality control checks indicating whether sequence is likely in frame
+    """
+    if len(sequence)%3 == 0:
+        message = 'Check: Sequence is divisible by 3 and likely in frame.'
+    else:
+        message = 'Warning: Sequence is not divisible by 3 and may not translate properly.'
+    return message
 
 def main():
     print("Please use the appropriate 'stitchr', 'thimble', 'gui_stitchr' or 'stitchrdl' command.")

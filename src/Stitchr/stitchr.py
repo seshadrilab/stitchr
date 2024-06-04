@@ -432,13 +432,15 @@ def stitch(specific_args, tcr_info, functionality, partial_info, codon_dict, j_w
 
     # TODO add information to output header if additional 5'/3' sequences specified?
     # TODO add functionality for interchangeable restriction enzymes
+    test_frame = fxn.test_frame(stitched_nt)
     for i in done:
         done[i] = fxn.translate_nt(done[i])
     if restriction == True:
         stitched_nt = "GGATCC" + stitched_nt + "GTCGAC"
 
-    test = fxn.report(specific_args, done)
-    check.append(test)
+    test_cdr3 = fxn.test_cdr3(specific_args, done)
+    check.append(test_cdr3)
+    check.append(test_frame)
     return out_bits, stitched_nt, transl_offset, done, check
 
 
