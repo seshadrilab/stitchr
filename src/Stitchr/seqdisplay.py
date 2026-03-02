@@ -1,6 +1,9 @@
-import PySimpleGUI as sg
 import re
 from . import stitchrfunctions as fxn
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton, QApplication
+from PySide6.QtGui import QTextCharFormat, QColor, QTextCursor, QFont
+from PySide6.QtCore import Qt
+
 
 def get_partlist(chains, linker):
     """
