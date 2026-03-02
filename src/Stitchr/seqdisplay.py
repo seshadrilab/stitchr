@@ -87,115 +87,130 @@ def _get_color(name):
 
 def get_highlights(widget, indexes, bold=False):
     """
-    param widget: a module used to store information for different box windows ('-Multiline' and '-Legend')
-    param indexes: a zipped list name, index1, index2 format to highlight different sections different colors
-    param fonts: font settings for widget to use when adding highlight tags
-    return: Widget with new highlight tags
+    param widget: a QTextEdit widget to apply highlights to
+    param indexes: a zipped list of (name, start_pos, end_pos) tuples
+    param bold: whether to use bold font for highlights
+    return: list of QTextEdit.ExtraSelection objects to apply
     """
-    for name, index1, index2 in indexes:
-                    # Make it so that a value is stored in indexes that will check against defined (v, j, cdr3, c, start, stop)
-                    if "_cdr3" in name:
-                        widget.tag_config('BLACK', foreground='white', background='black', font=fonts)
-                        widget.tag_add('BLACK', index1, index2)
-                    elif "_l" in name:
-                        widget.tag_config('PURPLE', foreground='white', background='purple', font=fonts)
-                        widget.tag_add('PURPLE', index1, index2)
-                    elif "Linker" in name:
-                        widget.tag_config('BLUE', foreground='white', background='teal', font=fonts)
-                        widget.tag_add('BLUE', index1, index2)
-                    elif "Start" in name:
-                        widget.tag_config('GREEN', foreground='white', background='green', font=fonts)
-                        widget.tag_add('GREEN', index1, index2)
-                    elif "End" in name:
-                        widget.tag_config('RED', foreground='white', background='red', font=fonts)
-                        widget.tag_add('RED', index1, index2)
-                    elif "_v" in name:
-                        widget.tag_config('ORANGE', foreground='black', background='orange', font=fonts)
-                        widget.tag_add('ORANGE', index1, index2)
-                    elif "_c" in name:
-                        widget.tag_config('PINK', foreground='black', background='pink', font=fonts)
-                        widget.tag_add('PINK', index1, index2)
-                    elif "_j" in name:
-                        widget.tag_config('BROWN', foreground='white', background='brown', font=fonts)
-                        widget.tag_add('BROWN', index1, index2)
-    return widget
+    selections = []
+    for name, start, end in indexes:
+        colors = _get_color(name)
+        if colors is None:
+            continue
+        fmt = _make_fmt(colors[0], colors[1], bold)
+        sel = QTextEdit.ExtraSelection()
+        sel.format = fmt
+        cursor = QTextCursor(widget.document())
+        cursor.setPosition(start)
+        cursor.setPosition(end, QTextCursor.KeepAnchor)
+        sel.cursor = cursor
+        selections.append(sel)
+    return selections
+
+
+class SeqDisplayDialog(QDialog):
+
+    def __init__(self, nt, parts="", linker="", linked=False, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Sequence Display")
+
+        aa = fxn.translate_nt(nt)
+        self._nt = nt
+        self._aa = aa
+
+        m_name, m_part = get_partlist(parts, linker)
+        self._nt_indexes = get_indexes(aa, m_name, m_part, 3)
+        self._aa_indexes = get_indexes(aa, m_name, m_part, 1)
+        self._m_indexes = self._aa_indexes
+
+        legend = "leader sequence | Linker sequence | cdr3 sequence | v region | j region | c region | Start | End"
+        l_name = ['_' + i for i in legend.split(' | ')]
+        l_part = legend.split(' | ')
+        self._l_indexes = get_indexes(legend, l_name, l_part)
+
+        font = QFont("Courier New", 10)
+
+        height = 20 if linked else 10
+
+        self._seq_box = QTextEdit()
+        self._seq_box.setFont(font)
+        self._seq_box.setPlainText(aa)
+        self._seq_box.setReadOnly(True)
+        self._seq_box.setMinimumWidth(700)
+        self._seq_box.setFixedHeight(height * 18)
+
+        self._legend_box = QTextEdit()
+        self._legend_box.setFont(font)
+        self._legend_box.setPlainText(legend)
+        self._legend_box.setReadOnly(True)
+        self._legend_box.setFixedHeight(30)
+
+        self._btn_highlight = QPushButton("Highlight")
+        self._btn_exit = QPushButton("Exit")
+        self._btn_nt = QPushButton("NT")
+        self._btn_aa = QPushButton("AA")
+        self._btn_aa.setEnabled(False)
+
+        btn_row = QHBoxLayout()
+        btn_row.addStretch()
+        btn_row.addWidget(self._btn_highlight)
+        btn_row.addWidget(self._btn_exit)
+        btn_row.addWidget(self._btn_nt)
+        btn_row.addWidget(self._btn_aa)
+
+        layout = QVBoxLayout()
+        layout.addWidget(self._seq_box)
+        layout.addWidget(self._legend_box)
+        layout.addLayout(btn_row)
+        self.setLayout(layout)
+
+        self._btn_highlight.clicked.connect(self._on_highlight)
+        self._btn_exit.clicked.connect(self.accept)
+        self._btn_nt.clicked.connect(self._on_nt)
+        self._btn_aa.clicked.connect(self._on_aa)
+
+    def _on_highlight(self):
+        bold_font = QFont("Courier New", 10)
+        bold_font.setBold(True)
+        seq_sels = get_highlights(self._seq_box, self._m_indexes, bold=True)
+        leg_sels = get_highlights(self._legend_box, self._l_indexes, bold=True)
+        self._seq_box.setExtraSelections(seq_sels)
+        self._legend_box.setExtraSelections(leg_sels)
+        self._btn_highlight.setEnabled(False)
+
+    def _on_nt(self):
+        self._seq_box.setPlainText(self._nt)
+        self._seq_box.setExtraSelections([])
+        self._legend_box.setExtraSelections([])
+        self._m_indexes = self._nt_indexes
+        self._btn_nt.setEnabled(False)
+        self._btn_aa.setEnabled(True)
+        self._btn_highlight.setEnabled(True)
+
+    def _on_aa(self):
+        self._seq_box.setPlainText(self._aa)
+        self._seq_box.setExtraSelections([])
+        self._legend_box.setExtraSelections([])
+        self._m_indexes = self._aa_indexes
+        self._btn_nt.setEnabled(True)
+        self._btn_aa.setEnabled(False)
+        self._btn_highlight.setEnabled(True)
+
 
 def display(nt, parts="", linker="", linked=False):
     """
-    Param tn: A string nt DNA sequence
+    Param nt: A string nt DNA sequence
     Param parts: a dictionary of gene regions and their DNA Amino Acid sequence
-    Dispaly: A GUI display of the DNA sequence that highlights different regions
+    Display: A GUI display of the DNA sequence that highlights different regions
     """
-    aa = fxn.translate_nt(nt)
+    app = QApplication.instance()
+    created_app = app is None
+    if created_app:
+        import sys
+        app = QApplication(sys.argv)
 
-    # Turn dictionary of parts into usable lists
-    m_name, m_part = get_partlist(parts, linker)
-
-    # Get different indexes to highlight depending on whether user wants NT or AA display
-    nt_m_indexes = get_indexes(aa, m_name, m_part, 3)
-    aa_m_indexes = get_indexes(aa, m_name, m_part, 1)
-
-    # Default mode will display in aa, so loading aa indexes
-    m_indexes = aa_m_indexes
-
-    # Setting up parts relating to Legend display and highlighting
-    legend = "leader sequence | Linker sequence | cdr3 sequence | v region | j region | c region | Start | End"
-    l_name = []
-    l_part = []
-    for i in legend.split(' | '):
-        l_name.append('_'+i)
-        l_part.append(i)
-    l_indexes = get_indexes(legend, l_name, l_part)
-
-    # Setting up theme of window
-    sg.theme('DarkBlue3')
-    font1 = ('Courier New', 10)
-    font2 = ('Courier New', 10, 'bold')
-    sg.set_options(font=font1)
-
-    if linked == True:
-        height = 20
-    else:
-        height = 10
-    # Setting the layout of buttons and display fields
-    layout = [
-        [sg.Multiline(aa, size=(100, height), key='-Multiline', disabled=True)],
-        [sg.Multiline(legend, size=(100, 1), key='-Legend', disabled=True)],
-        [sg.Push(), sg.Button('Highlight'), sg.Button('Exit'), sg.Button('NT'), sg.Button('AA', disabled=True)],
-    ]
-
-    # Setting up the window and interactive widgets
-    window = sg.Window('Sequence Display', layout, finalize=True)
-    multiline = window['-Multiline']
-    legend = window['-Legend']
-    m_widget = multiline.Widget
-    l_widget = legend.Widget
-
-    # Window loop to update with changing user input
-    while True:
-        event, values = window.read()
-        if event in (sg.WIN_CLOSED, 'Exit'):
-            break
-        elif event == 'Highlight':
-            m_widget = get_highlights(m_widget, m_indexes, font2)
-            l_widget = get_highlights(l_widget, l_indexes, font2)
-            window['-Multiline'].update(disabled=True)
-            window['-Legend'].update(disabled=True)
-            window['Highlight'].update(disabled=True)
-        elif event == 'NT':
-             window['-Multiline'].update(nt)
-             window['NT'].update(disabled=True)
-             window['AA'].update(disabled=False)
-             window['Highlight'].update(disabled=False)
-             m_indexes = nt_m_indexes
-        elif event == 'AA':
-             window['-Multiline'].update(aa)
-             window['NT'].update(disabled=False)
-             window['AA'].update(disabled=True)
-             window['Highlight'].update(disabled=False)
-             m_indexes = aa_m_indexes
-
-    window.close()
+    dialog = SeqDisplayDialog(nt, parts, linker, linked)
+    dialog.exec()
 
 
 def main():
