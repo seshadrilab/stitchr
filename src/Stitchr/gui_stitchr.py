@@ -3,19 +3,27 @@
 """
 gui_stitchr.py
 
-A graphical user interface for stitchr, powered by PySimpleGUI
+A graphical user interface for stitchr, powered by PySide6
 
 """
 
-
-import PySimpleGUI as sg
 import os
+import sys
+import warnings
+import collections as coll
+
+from PySide6.QtWidgets import (
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+    QLabel, QLineEdit, QTextEdit, QComboBox, QCheckBox, QPushButton,
+    QFileDialog, QMessageBox, QScrollArea, QSizePolicy,
+)
+from PySide6.QtGui import QFont, QShortcut, QKeySequence
+from PySide6.QtCore import Qt
+
 from . import stitchrfunctions as fxn
 from . import stitchr as st
 from . import thimble as th
 from . import seqdisplay as sd
-import collections as coll
-import warnings
 
 
 __version__ = '1.3.2'
