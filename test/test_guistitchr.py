@@ -1,6 +1,9 @@
 import filecmp
+from pathlib import Path
 from Bio import SeqIO
 from Stitchr import stitchrfunctions as fxn
+
+TEST_DIR = Path(__file__).parent
 
 class TestOutFiles:
     """Ensures exported FASTAs contain expected information. This is our 
@@ -49,7 +52,7 @@ class TestOutFiles:
 
     def test_alphabeta(self):
         # Does not contain restriction sites so files should be identical
-        assert filecmp.cmp('baseline_ab.fasta', 'new_ab.fasta')
+        assert filecmp.cmp(TEST_DIR / 'baseline_ab.fasta', TEST_DIR / 'new_ab.fasta')
 
 
     def test_gammadelta(self):
@@ -59,12 +62,12 @@ class TestOutFiles:
         new_nt = []
         new_aa = []
 
-        for record in SeqIO.parse('baseline_gd.fasta', "fasta"):
+        for record in SeqIO.parse(TEST_DIR / 'baseline_gd.fasta', "fasta"):
             seq = record.seq
             base_nt.append(seq)
             base_aa.append(fxn.translate_nt(str(seq)))
         
-        for record in SeqIO.parse('new_gd.fasta', "fasta"):
+        for record in SeqIO.parse(TEST_DIR / 'new_gd.fasta', "fasta"):
             seq = record.seq
             new_nt.append(seq)
             new_aa.append(fxn.translate_nt(str(seq)))
@@ -96,12 +99,12 @@ class TestOutFiles:
         mouse_nt = []
         mouse_aa = []
 
-        for record in SeqIO.parse('baseline_ab.fasta', "fasta"):
+        for record in SeqIO.parse(TEST_DIR / 'baseline_ab.fasta', "fasta"):
             seq = record.seq
             base_nt.append(str(seq))
             base_aa.append(fxn.translate_nt(str(seq)))
 
-        for record in SeqIO.parse('mouse_ab.fasta', "fasta"):
+        for record in SeqIO.parse(TEST_DIR / 'mouse_ab.fasta', "fasta"):
             seq = record.seq
             mouse_nt.append(str(seq))
             mouse_aa.append(fxn.translate_nt(str(seq)))
@@ -133,12 +136,12 @@ class TestOutFiles:
         restrict_nt = []
         restrict_aa = []
 
-        for record in SeqIO.parse('mouse_ab.fasta', "fasta"):
+        for record in SeqIO.parse(TEST_DIR / 'mouse_ab.fasta', "fasta"):
             seq = record.seq
             mouse_nt.append(str(seq))
             mouse_aa.append(fxn.translate_nt(str(seq)))
 
-        for record in SeqIO.parse('restrict_ab.fasta', "fasta"):
+        for record in SeqIO.parse(TEST_DIR / 'restrict_ab.fasta', "fasta"):
             seq = record.seq
             restrict_nt.append(str(seq))
             restrict_aa.append(fxn.translate_nt(str(seq)))
@@ -163,12 +166,12 @@ class TestOutFiles:
         restrict_nt = []
         restrict_aa = []
 
-        for record in SeqIO.parse('new_gd.fasta', "fasta"):
+        for record in SeqIO.parse(TEST_DIR / 'new_gd.fasta', "fasta"):
             seq = record.seq
             new_nt.append(seq)
             new_aa.append(fxn.translate_nt(str(seq)))
 
-        for record in SeqIO.parse('restrict_gd.fasta', "fasta"):
+        for record in SeqIO.parse(TEST_DIR / 'restrict_gd.fasta', "fasta"):
             seq = record.seq
             restrict_nt.append(str(seq))
             restrict_aa.append(fxn.translate_nt(str(seq)))
