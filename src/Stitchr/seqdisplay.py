@@ -44,13 +44,13 @@ def get_indexes(seq, name, part, a=1):
         if part in seq:
             if name == 'Start' or name == 'End':
                 start = seq.index(part)
-                index1s.append(f'1.{a*start}')
-                index2s.append(f'1.{a*(start + 1)}')
+                index1s.append(a * start)
+                index2s.append(a * (start + 1))
                 names.append(name)
             else:
                 for m in re.finditer(part, seq):
-                    index1s.append(f'1.{a*m.start()}')
-                    index2s.append(f'1.{a*m.end()}')
+                    index1s.append(a * m.start())
+                    index2s.append(a * m.end())
                     names.append(name)
     indexes = list(zip(names, index1s, index2s))
     return indexes
