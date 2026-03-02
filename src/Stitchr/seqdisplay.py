@@ -56,7 +56,36 @@ def get_indexes(seq, name, part, a=1):
     return indexes
 
 
-def get_highlights(widget, indexes, fonts):
+# Map region name patterns to (foreground, background) colors
+_COLOR_MAP = [
+    ("_cdr3",   ("white",  "black")),
+    ("_l",      ("white",  "purple")),
+    ("Linker",  ("white",  "teal")),
+    ("Start",   ("white",  "green")),
+    ("End",     ("white",  "red")),
+    ("_v",      ("black",  "orange")),
+    ("_c",      ("black",  "pink")),
+    ("_j",      ("white",  "brown")),
+]
+
+
+def _make_fmt(fg, bg, bold=False):
+    fmt = QTextCharFormat()
+    fmt.setForeground(QColor(fg))
+    fmt.setBackground(QColor(bg))
+    if bold:
+        fmt.setFontWeight(QFont.Bold)
+    return fmt
+
+
+def _get_color(name):
+    for pattern, colors in _COLOR_MAP:
+        if pattern in name:
+            return colors
+    return None
+
+
+def get_highlights(widget, indexes, bold=False):
     """
     param widget: a module used to store information for different box windows ('-Multiline' and '-Legend')
     param indexes: a zipped list name, index1, index2 format to highlight different sections different colors
