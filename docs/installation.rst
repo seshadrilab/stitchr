@@ -24,10 +24,9 @@ There are also some optional functions that require additional dependencies:
 
     * ``pip install Bio``
 
-* The graphical user interface version :ref:`gui-label` requires ``PySimpleGUI``
+* The graphical user interface version :ref:`gui-label` requires ``PySide6``
 
-    * ``pip install PySimpleGUI``
-    * This also might require the `installation of Tkinter <https://tkdocs.com/tutorial/install.html>`_
+    * ``pip install PySide6``
 
 Quick start example
 -------------------
