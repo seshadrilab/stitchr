@@ -73,127 +73,472 @@ def switch_receptors(text, current_receptor):
     return switched_receptor
 
 
-def change_receptors(receptor_str):
-    """
-    Updates all the actual fields when swapping receptor chains (i.e. a/b to g/d TCRs)
-    :param receptor_str: string detailing the CURRENT receptor, i.e. either 'TRA/TRB' or 'TRG/TRD'
-    :return: the new receptor used (couresty of switch_receptor)
-    """
-    # Allow the users to flick between stitching (and thus viewing parameters for) A/B and G/D TCR sequences
-    new_receptor = switch_receptors(receptor_str, receptor_str)
+class StitchrWindow(QMainWindow):
 
-    # First change the link order dropdown (which needs to be handled differently)
-    window['link_order_choice'].update(values=link_orders[new_receptor], value=link_orders[new_receptor][1])
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("stitchr")
 
-    # Then the rest of the fields
-    fields_to_change = [x for x in window.AllKeysDict if x.endswith('_text')]
-    fields_to_change += ['change_receptor']
+        self.extra_gene_text = ">TCRgenename*01\nATG\n"
+        self.preferred_button_default = 'Preferred allele file'
 
-    for window_field in fields_to_change:
+        self.linkers = fxn.get_linker_dict()
+        self.link_choices = list(self.linkers.keys()) + ['Custom']
+        self.species_list = fxn.find_species_covered()
+        self.receptor = 'TRA/TRB'
+        self.link_orders = {'TRA/TRB': ['AB', 'BA'],
+                            'TRG/TRD': ['GD', 'DG']}
+        self.examples_path = fxn.gui_examples_dir
+        self.preferred = ''
+        self.outputs = coll.defaultdict()
 
-        if window[window_field].Type == 'text':
-            current_text = window[window_field].DisplayText
-        elif window[window_field].Type == 'button':
-            current_text = window[window_field].get_text()
+        # All named widgets stored here for change_receptors / generic access
+        self.widgets = {}
 
-        if window_field != 'change_receptor':
-            new_text = switch_receptors(current_text, receptor_str)
+        self._build_ui()
+        self._connect_signals()
+
+        QShortcut(QKeySequence(Qt.Key_Escape), self, self.close)
+
+    # ------------------------------------------------------------------ #
+    #  UI construction helpers                                             #
+    # ------------------------------------------------------------------ #
+
+    def _label(self, text, key=None, font_size=12, font_name='Arial'):
+        lbl = QLabel(text)
+        lbl.setFont(QFont(font_name, font_size))
+        if key:
+            self.widgets[key] = lbl
+        return lbl
+
+    def _line_edit(self, key, text=''):
+        w = QLineEdit(text)
+        self.widgets[key] = w
+        return w
+
+    def _text_edit(self, key, text='', height_lines=5, mono=True):
+        w = QTextEdit()
+        if mono:
+            w.setFont(QFont('Courier New', 10))
+        if text:
+            w.setPlainText(text)
+        w.setFixedHeight(height_lines * 18)
+        self.widgets[key] = w
+        return w
+
+    def _combo(self, key, items, default=None):
+        w = QComboBox()
+        w.addItems(items)
+        if default and default in items:
+            w.setCurrentText(default)
+        self.widgets[key] = w
+        return w
+
+    def _checkbox(self, key, text, font_size=12):
+        w = QCheckBox(text)
+        w.setFont(QFont('Arial', font_size))
+        self.widgets[key] = w
+        return w
+
+    def _button(self, key, text, font_size=11):
+        w = QPushButton(text)
+        w.setFont(QFont('Arial', font_size))
+        self.widgets[key] = w
+        return w
+
+    @staticmethod
+    def _row(*widgets):
+        row = QHBoxLayout()
+        row.setContentsMargins(0, 0, 0, 0)
+        for w in widgets:
+            if isinstance(w, QWidget):
+                row.addWidget(w)
+            else:
+                row.addLayout(w)
+        return row
+
+    # ------------------------------------------------------------------ #
+    #  Full UI build                                                       #
+    # ------------------------------------------------------------------ #
+
+    def _build_ui(self):
+        # ---- column 1: general controls ----
+        col1 = QWidget()
+        v1 = QVBoxLayout(col1)
+        v1.setAlignment(Qt.AlignTop)
+
+        v1.addLayout(self._row(
+            self._button('Example data', 'Example data'),
+            self._button('Reset form', 'Reset form'),
+        ))
+
+        self._uploaded_tcr_path = ''
+        btn_find = self._button('find_tcr_file', 'Find TCR input file')
+        btn_upload = self._button('Upload TCR details', 'Upload TCR details')
+        v1.addLayout(self._row(btn_find, btn_upload))
+
+        v1.addWidget(self._label('Species', key='species_label'))
+        v1.addWidget(self._combo('species_choice', self.species_list, 'HUMAN'))
+
+        v1.addWidget(self._button('change_receptor', 'Change to TRG/TRD'))
+
+        v1.addWidget(self._label('Additional genes', key='additional_genes_label'))
+        v1.addWidget(self._text_edit('additional_genes', self.extra_gene_text, height_lines=3))
+
+        btn_preferred = self._button('preferred_allele_button', self.preferred_button_default)
+        v1.addWidget(btn_preferred)
+
+        linker_row = QHBoxLayout()
+        linker_row.addWidget(self._checkbox('chk_linker', 'Link chains'))
+        linker_row.addWidget(self._combo('linker_choice', self.link_choices, self.link_choices[0]))
+        v1.addLayout(linker_row)
+
+        v1.addWidget(self._line_edit('custom_linker'))
+        self.widgets['custom_linker'].setVisible(False)
+        self.widgets['custom_linker'].setPlaceholderText('Custom linker sequence')
+
+        order_row = QHBoxLayout()
+        order_row.addWidget(self._label('Link order'))
+        order_row.addWidget(self._combo('link_order_choice',
+                                        self.link_orders[self.receptor],
+                                        self.link_orders[self.receptor][1]))
+        v1.addLayout(order_row)
+
+        v1.addWidget(self._checkbox('chk_seamless', 'CDR3 flanking nucleotides (20)'))
+        v1.addWidget(self._checkbox('chk_restriction', 'Add Restriction Sites (BamHI, SalI)'))
+
+        run_btn = self._button('Run Stitchr', 'Run Stitchr', font_size=18)
+        run_btn.setMinimumHeight(50)
+        v1.addWidget(run_btn)
+
+        export_row = QHBoxLayout()
+        export_row.addWidget(self._button('Export output', 'Export output'))
+        export_row.addWidget(self._button('Exit', 'Exit'))
+        v1.addLayout(export_row)
+
+        v1.addWidget(self._label('Linked out', key='linked_out_text'))
+        v1.addWidget(self._text_edit('linked_out', height_lines=10))
+        v1.addWidget(self._label('Linked log', key='linked_log_text'))
+        v1.addWidget(self._text_edit('linked_log', height_lines=5))
+
+        # ---- column 2: Alpha/Gamma chain ----
+        col2 = QWidget()
+        v2 = QVBoxLayout(col2)
+        v2.setAlignment(Qt.AlignTop)
+
+        v2.addWidget(self._label('Alpha chain TCR', key='TR1_title_text', font_size=16))
+
+        v2.addWidget(self._label('TRAV gene name*', key='TR1_V_text'))
+        v2.addWidget(self._line_edit('TR1V'))
+        v2.addWidget(self._label('TRAJ gene name*', key='TR1_J_text'))
+        v2.addWidget(self._line_edit('TR1J'))
+        v2.addWidget(self._label('TRA CDR3 junction* (nt/aa)', key='TR1_CDR3_text'))
+        v2.addWidget(self._line_edit('TR1_CDR3'))
+        v2.addWidget(self._label('TRA arbitrary name', key='TR1_name_text'))
+        v2.addWidget(self._line_edit('TR1_name'))
+
+        lc_row = QHBoxLayout()
+        lc_row.addWidget(self._label('TRA alternative leader', key='TR1_l_title_text'))
+        lc_row.addWidget(self._label('TRAC gene name', key='TR1_c_title_text'))
+        v2.addLayout(lc_row)
+        lc_inputs = QHBoxLayout()
+        lc_inputs.addWidget(self._line_edit('TR1_leader'))
+        lc_inputs.addWidget(self._line_edit('TR1C'))
+        v2.addLayout(lc_inputs)
+
+        prime_labels = QHBoxLayout()
+        prime_labels.addWidget(self._label("5' chain append"))
+        prime_labels.addWidget(self._label("3' chain append"))
+        v2.addLayout(prime_labels)
+        prime_inputs = QHBoxLayout()
+        prime_inputs.addWidget(self._line_edit('TR1_5_prime_seq'))
+        prime_inputs.addWidget(self._line_edit('TR1_3_prime_seq'))
+        v2.addLayout(prime_inputs)
+
+        out1_row = QHBoxLayout()
+        out1_row.addWidget(self._label('TRA out', key='TR1_out_title_text'))
+        hl1 = self._button('TR1_Highlight', 'Highlight')
+        hl1.setEnabled(False)
+        out1_row.addWidget(hl1)
+        v2.addLayout(out1_row)
+        v2.addWidget(self._text_edit('TR1_out', height_lines=20))
+        v2.addWidget(self._label('TRA log', key='TR1_log_title_text'))
+        v2.addWidget(self._text_edit('TR1_log', height_lines=5))
+
+        # ---- column 3: Beta/Delta chain ----
+        col3 = QWidget()
+        v3 = QVBoxLayout(col3)
+        v3.setAlignment(Qt.AlignTop)
+
+        v3.addWidget(self._label('Beta chain TCR', key='TR2_title_text', font_size=16))
+
+        v3.addWidget(self._label('TRBV gene name*', key='TR2_V_text'))
+        v3.addWidget(self._line_edit('TR2V'))
+        v3.addWidget(self._label('TRBJ gene name*', key='TR2_J_text'))
+        v3.addWidget(self._line_edit('TR2J'))
+        v3.addWidget(self._label('TRB CDR3 junction* (nt/aa)', key='TR2_CDR3_text'))
+        v3.addWidget(self._line_edit('TR2_CDR3'))
+        v3.addWidget(self._label('TRB arbitrary name', key='TR2_name_text'))
+        v3.addWidget(self._line_edit('TR2_name'))
+
+        lc2_row = QHBoxLayout()
+        lc2_row.addWidget(self._label('TRB alternative leader', key='TR2_l_title_text'))
+        lc2_row.addWidget(self._label('TRBC gene name', key='TR2_c_title_text'))
+        v3.addLayout(lc2_row)
+        lc2_inputs = QHBoxLayout()
+        lc2_inputs.addWidget(self._line_edit('TR2_leader'))
+        lc2_inputs.addWidget(self._line_edit('TR2C'))
+        v3.addLayout(lc2_inputs)
+
+        prime2_labels = QHBoxLayout()
+        prime2_labels.addWidget(self._label("5' chain append"))
+        prime2_labels.addWidget(self._label("3' chain append"))
+        v3.addLayout(prime2_labels)
+        prime2_inputs = QHBoxLayout()
+        prime2_inputs.addWidget(self._line_edit('TR2_5_prime_seq'))
+        prime2_inputs.addWidget(self._line_edit('TR2_3_prime_seq'))
+        v3.addLayout(prime2_inputs)
+
+        out2_row = QHBoxLayout()
+        out2_row.addWidget(self._label('TRB out', key='TR2_out_title_text'))
+        hl2 = self._button('TR2_Highlight', 'Highlight')
+        hl2.setEnabled(False)
+        out2_row.addWidget(hl2)
+        v3.addLayout(out2_row)
+        v3.addWidget(self._text_edit('TR2_out', height_lines=20))
+        v3.addWidget(self._label('TRB log', key='TR2_log_title_text'))
+        v3.addWidget(self._text_edit('TR2_log', height_lines=5))
+
+        # ---- scroll areas for each column ----
+        def scrolled(widget):
+            sa = QScrollArea()
+            sa.setWidgetResizable(True)
+            sa.setWidget(widget)
+            return sa
+
+        # ---- main layout ----
+        central = QWidget()
+        main_row = QHBoxLayout(central)
+        main_row.addWidget(scrolled(col1))
+        main_row.addWidget(scrolled(col2))
+        main_row.addWidget(scrolled(col3))
+        self.setCentralWidget(central)
+        self.resize(1400, 900)
+
+    # ------------------------------------------------------------------ #
+    #  Signal connections                                                  #
+    # ------------------------------------------------------------------ #
+
+    def _connect_signals(self):
+        self.widgets['Example data'].clicked.connect(self._on_example_data)
+        self.widgets['Reset form'].clicked.connect(self._on_reset_form)
+        self.widgets['find_tcr_file'].clicked.connect(self._on_find_tcr_file)
+        self.widgets['Upload TCR details'].clicked.connect(self._on_upload_tcr_details)
+        self.widgets['change_receptor'].clicked.connect(self._on_change_receptor)
+        self.widgets['preferred_allele_button'].clicked.connect(self._on_preferred_alleles)
+        self.widgets['linker_choice'].currentTextChanged.connect(self._on_linker_choice)
+        self.widgets['Run Stitchr'].clicked.connect(self._on_run_stitchr)
+        self.widgets['Export output'].clicked.connect(self._on_export_output)
+        self.widgets['Exit'].clicked.connect(self.close)
+        self.widgets['TR1_Highlight'].clicked.connect(self._on_tr1_highlight)
+        self.widgets['TR2_Highlight'].clicked.connect(self._on_tr2_highlight)
+
+    # ------------------------------------------------------------------ #
+    #  Receptor switching                                                  #
+    # ------------------------------------------------------------------ #
+
+    def _change_receptors(self):
+        """Updates all labeled fields when swapping between a/b and g/d TCRs."""
+        new_receptor = switch_receptors(self.receptor, self.receptor)
+
+        # Update link order combo
+        lo = self.widgets['link_order_choice']
+        lo.clear()
+        lo.addItems(self.link_orders[new_receptor])
+        lo.setCurrentText(self.link_orders[new_receptor][1])
+
+        # Update all _text labels and the change_receptor button
+        text_keys = [k for k in self.widgets if k.endswith('_text')]
+        text_keys.append('change_receptor')
+
+        for key in text_keys:
+            w = self.widgets[key]
+            if isinstance(w, QLabel):
+                current = w.text()
+            elif isinstance(w, QPushButton):
+                current = w.text()
+            else:
+                continue
+
+            if key != 'change_receptor':
+                new_text = switch_receptors(current, self.receptor)
+            else:
+                new_text = switch_receptors(current, new_receptor)
+
+            w.setText(new_text)
+
+        self.receptor = new_receptor
+
+    # ------------------------------------------------------------------ #
+    #  Value helpers                                                       #
+    # ------------------------------------------------------------------ #
+
+    def _val(self, key):
+        """Get the current string value of a widget by key."""
+        w = self.widgets[key]
+        if isinstance(w, QLineEdit):
+            return w.text()
+        elif isinstance(w, QTextEdit):
+            return w.toPlainText()
+        elif isinstance(w, QComboBox):
+            return w.currentText()
+        elif isinstance(w, QCheckBox):
+            return w.isChecked()
+        return ''
+
+    def _set(self, key, value):
+        """Set the value of a widget by key."""
+        w = self.widgets[key]
+        if isinstance(w, QLineEdit):
+            w.setText(str(value) if value is not None else '')
+        elif isinstance(w, QTextEdit):
+            w.setPlainText(str(value) if value is not None else '')
+        elif isinstance(w, QComboBox):
+            w.setCurrentText(str(value))
+        elif isinstance(w, QCheckBox):
+            w.setChecked(bool(value))
+        elif isinstance(w, QLabel):
+            w.setText(str(value))
+        elif isinstance(w, QPushButton):
+            w.setText(str(value))
+
+    # ------------------------------------------------------------------ #
+    #  Event handlers                                                      #
+    # ------------------------------------------------------------------ #
+
+    def _on_example_data(self):
+        species = self._val('species_choice')
+        example_files = [x for x in os.listdir(self.examples_path)
+                         if x.endswith('tsv') and x[0] not in ['.', '~', '_']]
+        example_matches = [x for x in example_files
+                           if species in x.upper() and self.receptor.replace('/', '-') in x]
+
+        if len(example_matches) == 0:
+            QMessageBox.information(self, 'No examples',
+                                    'No example ' + self.receptor + ' TCR example files available for species ' + species + '.')
         else:
-            new_text = switch_receptors(current_text, new_receptor)
+            if len(example_matches) > 1:
+                QMessageBox.information(self, 'Multiple examples',
+                                        'More than one ' + self.receptor + 'TCR example files available for species ' + species + ':\n'
+                                        'using the first alphabetically.')
+                example_matches.sort()
 
-        window[window_field].update(new_text)
+            self._upload_tcr_details(os.path.join(self.examples_path, example_matches[0]), species)
 
-    # Last thing: change the current receptor being used
-    return new_receptor
+        self.widgets['TR1_Highlight'].setEnabled(False)
+        self.widgets['TR2_Highlight'].setEnabled(False)
 
+    def _on_reset_form(self):
+        self._set('species_choice', 'HUMAN')
 
-def upload_tcr_details(path_to_file, receptor_type, stated_species):
-    """
-    Read suitably formatted TCRs in template format to the GUI
-    :param path_to_file: str detailing the full path to the input file
-    :param receptor_type: str detailing the receptor in use, i.e. either 'TRA/TRB' or 'TRG/TRD'
-    :param stated_species: str of the species on record before the upload, to remain if one not inferred
-    :return: strs of receptor type and species again, in case they switch during the course of reading the TCR file in
-    """
+        fields_to_reset = [
+            'TR1V', 'TR1J', 'TR1_CDR3', 'TR1_name', 'TR1_leader', 'TR1C',
+            'TR1_5_prime_seq', 'TR1_3_prime_seq', 'TR1_out',
+            'TR2V', 'TR2J', 'TR2_CDR3', 'TR2_name', 'TR2_leader', 'TR2C',
+            'TR2_5_prime_seq', 'TR2_3_prime_seq', 'TR2_out',
+        ]
+        for field in fields_to_reset:
+            self._set(field, '')
 
-    # This section uses the Thimble format input file to populate the GUI fields
+        for field in ['linked_out', 'linked_log', 'TR1_log', 'TR2_log']:
+            self._set(field, '')
 
-    # First check file details
-    if not os.path.isfile(path_to_file):
-        sg.Popup('Please use \'Find TCR input file\' button to try again.', title='TCR file not found')
-    else:
+        self.outputs = coll.defaultdict()
 
-        # Try to estimate species from input filename
+        lo = self.widgets['link_order_choice']
+        lo.clear()
+        lo.addItems(self.link_orders[self.receptor])
+        lo.setCurrentText(self.link_orders[self.receptor][1])
+
+        self._set('additional_genes', self.extra_gene_text)
+        self._set('preferred_allele_button', self.preferred_button_default)
+        self.preferred = ''
+        self._uploaded_tcr_path = ''
+
+        self.widgets['TR1_Highlight'].setEnabled(False)
+        self.widgets['TR2_Highlight'].setEnabled(False)
+
+    def _on_find_tcr_file(self):
+        path, _ = QFileDialog.getOpenFileName(self, 'Find TCR input file')
+        if path:
+            self._uploaded_tcr_path = path
+
+    def _on_upload_tcr_details(self):
+        if not self._uploaded_tcr_path:
+            QMessageBox.information(self, 'No file', "Please use 'Find TCR input file' button to try again.")
+            return
+        self._upload_tcr_details(self._uploaded_tcr_path, self._val('species_choice'))
+
+    def _upload_tcr_details(self, path_to_file, stated_species):
+        if not os.path.isfile(path_to_file):
+            QMessageBox.information(self, 'TCR file not found',
+                                    "Please use 'Find TCR input file' button to try again.")
+            return
+
         species_inference = fxn.infer_species(path_to_file)
         if species_inference:
             inferred_species = species_inference
-            window['species_choice'].update(inferred_species)
+            self._set('species_choice', inferred_species)
         else:
             inferred_species = stated_species
-            sg.Popup("Cannot infer species name from file name:\nplease set manually.")
+            QMessageBox.information(self, '', "Cannot infer species name from file name:\nplease set manually.")
 
         with open(path_to_file, 'r') as in_file:
             line_count = 0
-
             for line in in_file:
                 bits = line.replace('\n', '').replace('\r', '').split('\t')
 
-                # Use header line to check it's the right file format
                 if line_count == 0:
-
-                    if bits != th.in_headers[receptor_type]:
-                        # Might be other loci
-                        if bits == th.in_headers[switch_receptors(receptor_type, receptor_type)]:
-                            receptor_type = change_receptors(receptor_type)
-
+                    if bits != th.in_headers[self.receptor]:
+                        switched = switch_receptors(self.receptor, self.receptor)
+                        if bits == th.in_headers[switched]:
+                            self._change_receptors()
                         else:
-                            sg.Popup("Input TCR file doesn't have expected columns.\n"
-                                     "Please refer to template and try again.",
-                                     title="TCR file error")
+                            QMessageBox.information(self, 'TCR file error',
+                                                    "Input TCR file doesn't have expected columns.\n"
+                                                    "Please refer to template and try again.")
                             break
 
-                # Then use the data line to replace any matching entries on the webform
                 elif line_count == 1:
-                    for x in range(len(th.in_headers[receptor_type])):
-
-                        # Have to add TCR name field individually, as it's only provided once per line
+                    for x in range(len(th.in_headers[self.receptor])):
                         if x == 0:
-                            window['TR1_name'].update(bits[x])
-                            window['TR2_name'].update(bits[x])
-
-                        # Then only update those fields that are shared
-                        elif 'Link' not in th.in_headers[receptor_type][x]:
-                            window[th.locus_to_trx(th.in_headers[receptor_type][x])].update(bits[x])
-
-                        # Update link order...
-                        elif th.in_headers[receptor_type][x] == 'Link_order':
-                            window['chk_linker'].update(value=True)
-
+                            self._set('TR1_name', bits[x])
+                            self._set('TR2_name', bits[x])
+                        elif 'Link' not in th.in_headers[self.receptor][x]:
+                            self._set(th.locus_to_trx(th.in_headers[self.receptor][x]), bits[x])
+                        elif th.in_headers[self.receptor][x] == 'Link_order':
+                            self._set('chk_linker', True)
                             if bits[x]:
-                                if bits[x] == 'AB':
+                                if bits[x] in ('AB', 'GD'):
                                     position = 0
-                                elif bits[x] == 'BA':
-                                    position = 1
-                                elif bits[x] == 'GD':
-                                    position = 0
-                                elif bits[x] == 'DG':
+                                elif bits[x] in ('BA', 'DG'):
                                     position = 1
                                 else:
-                                    raise warnings.warn("Invalid link order: " + bits[x])
-
-                                window['link_order_choice'].update(values=link_orders[receptor_type],
-                                                                   value=link_orders[receptor_type][position])
-
-                        # ... and linker sequence
-                        elif th.in_headers[receptor_type][x] == 'Linker':
-                            window['chk_linker'].update(value=True)
-
+                                    warnings.warn("Invalid link order: " + bits[x])
+                                    position = 1
+                                lo = self.widgets['link_order_choice']
+                                lo.clear()
+                                lo.addItems(self.link_orders[self.receptor])
+                                lo.setCurrentIndex(position)
+                        elif th.in_headers[self.receptor][x] == 'Linker':
+                            self._set('chk_linker', True)
                             if bits[x]:
-                                if bits[x] in linkers.keys():
-                                    window['linker_choice'].update(value=bits[x])
+                                if bits[x] in self.linkers:
+                                    self._set('linker_choice', bits[x])
                                 else:
-                                    window['linker_choice'].update('Custom')
-                                    window['custom_linker'].update(bits[x], visible=True)
+                                    self._set('linker_choice', 'Custom')
+                                    self._set('custom_linker', bits[x])
+                                    self.widgets['custom_linker'].setVisible(True)
 
                 elif line_count > 1:
                     warnings.warn("More than one data line detected in input TCR file. Ignoring lines after first.")
@@ -201,505 +546,294 @@ def upload_tcr_details(path_to_file, receptor_type, stated_species):
 
                 line_count += 1
 
-        return receptor_type, inferred_species
+    def _on_change_receptor(self):
+        self._change_receptors()
 
+    def _on_preferred_alleles(self):
+        path, _ = QFileDialog.getOpenFileName(self, 'Select preferred allele file')
+        if path:
+            self.preferred = path
+            self._set('preferred_allele_button', os.path.basename(path))
 
-def tidy_values(reference_chain, set_values):
-    """
-    Make sure the input values for a given chain are plausible
-    :param reference_chain: string denoting the current chain
-    :param set_values: the dict of values passed to the stitching function
-    """
-    for field in ['V', 'J', '_CDR3', '_leader', 'C']:
-        if set_values[reference_chain + field]:
-            set_values[reference_chain + field] = set_values[reference_chain + field].upper()
+    def _on_linker_choice(self, text):
+        self._set('chk_linker', True)
+        if text == 'Custom':
+            self.widgets['custom_linker'].setVisible(True)
+        else:
+            self.widgets['custom_linker'].setVisible(False)
 
-    return set_values
+    def _tidy_values(self, ref_chain, v):
+        for field in ['V', 'J', '_CDR3', '_leader', 'C']:
+            k = ref_chain + field
+            if v.get(k):
+                v[k] = v[k].upper()
+        return v
+
+    def _gather_values(self):
+        """Collect all current widget values into a dict keyed by widget name."""
+        v = {}
+        for key, w in self.widgets.items():
+            if isinstance(w, QLineEdit):
+                v[key] = w.text()
+            elif isinstance(w, QTextEdit):
+                v[key] = w.toPlainText()
+            elif isinstance(w, QComboBox):
+                v[key] = w.currentText()
+            elif isinstance(w, QCheckBox):
+                v[key] = w.isChecked()
+        return v
+
+    def _on_run_stitchr(self):
+        warning_msgs = coll.defaultdict(str)
+        self._set('linked_out', '')
+        self._set('linked_log', '')
+        self.widgets['Run Stitchr'].setEnabled(False)
+        QApplication.processEvents()
+
+        values = self._gather_values()
+        values_raw = dict(values)
+
+        codons = fxn.get_optimal_codons('', values['species_choice'])
+        self.outputs = coll.defaultdict()
+
+        # Additional genes
+        additional_genes_text = values['additional_genes']
+        if additional_genes_text != self.extra_gene_text + '\n' and additional_genes_text != self.extra_gene_text:
+            self.outputs['additional_fastas_raw'] = [
+                x for x in read_fasta_box(additional_genes_text.split('\n') + ['>\n'])
+            ][:-1]
+
+            if len(list(set([x[0] for x in self.outputs['additional_fastas_raw']]))) != \
+                    len(self.outputs['additional_fastas_raw']):
+                self._set('additional_genes',
+                          "Multiple FASTAs detected with the same identifier name.\n"
+                          "Additional genes ignored; correct and retry")
+
+            self.outputs['additional_fastas'] = []
+            for extra_gene in self.outputs['additional_fastas_raw']:
+                extra_gene = [x.upper() for x in extra_gene]
+                if '*' in extra_gene[0]:
+                    self.outputs['additional_fastas'].append(extra_gene)
+                else:
+                    self.outputs['additional_fastas'].append((extra_gene[0] + '*01', extra_gene[1]))
+                if not fxn.dna_check(extra_gene[1]):
+                    if fxn.dna_check(extra_gene[1]) != self.extra_gene_text:
+                        warnings.warn("Warning: user-provided gene " + extra_gene[0] +
+                                      " contains non-DNA sequences.")
+
+        seamless = values['chk_seamless']
+        parts = []
+        self.outputs['parts'] = parts
+        Seq_5 = ""
+        Seq_3 = ""
+        restriction = False
+
+        if values['chk_restriction']:
+            if values['chk_linker']:
+                Seq_5 = "GGATCC"
+                Seq_3 = "GTCGAC"
+            else:
+                restriction = True
+
+        convert_chains = {'TRA/TRB': {'TR1': 'TRA', 'TR2': 'TRB'},
+                          'TRG/TRD': {'TR1': 'TRG', 'TR2': 'TRD'}}
+
+        for ref_chain in ['TR1', 'TR2']:
+            chain = convert_chains[self.receptor][ref_chain]
+            self._set(ref_chain + '_out', '')
+            self._set(ref_chain + '_log', '')
+
+            with warnings.catch_warnings(record=True) as chain_log:
+                warnings.simplefilter("always")
+
+                if values[ref_chain + 'V'] and values[ref_chain + 'J'] and values[ref_chain + '_CDR3']:
+                    values = self._tidy_values(ref_chain, values)
+
+                    try:
+                        tcr_dat, functionality, partial, frame_dat = fxn.get_imgt_data(
+                            chain, st.gene_types, values['species_choice'])
+
+                        if 'additional_fastas' in self.outputs:
+                            for extra_gene in self.outputs['additional_fastas']:
+                                gene, allele = extra_gene[0].split('*')
+                                for gene_type in tcr_dat:
+                                    if gene not in tcr_dat[gene_type]:
+                                        tcr_dat[gene_type][gene] = coll.defaultdict(list)
+                                    if allele in tcr_dat[gene_type][gene]:
+                                        raise warnings.warn(
+                                            "User provided gene/allele combination " + extra_gene[0] +
+                                            " already exists in TCR germline data. Please change and try.")
+                                    else:
+                                        tcr_dat[gene_type][gene][allele] = extra_gene[1].upper()
+                                        functionality[gene][allele] = '?'
+
+                        preferred = fxn.get_preferred_alleles(
+                            self.preferred, list(fxn.regions.values()), tcr_dat, partial, chain
+                        ) if self.preferred else ''
+
+                        tcr_bits = {
+                            'v': values[ref_chain + 'V'],
+                            'j': values[ref_chain + 'J'],
+                            'cdr3': values[ref_chain + '_CDR3'],
+                            'skip_c_checks': False,
+                            'species': values['species_choice'],
+                            'seamless': seamless,
+                            'name': values[ref_chain + '_name'].replace(' ', '_'),
+                            'l': values[ref_chain + '_leader'],
+                            'c': values[ref_chain + 'C'],
+                            '5_prime_seq': values[ref_chain + '_5_prime_seq'],
+                            '3_prime_seq': values[ref_chain + '_3_prime_seq'],
+                        }
+
+                        if 'additional_fastas' in self.outputs:
+                            tcr_bits['skip_c_checks'] = True
+
+                        tcr_bits = fxn.autofill_input(tcr_bits, chain)
+
+                        mouse_c = ''
+                        if values['species_choice'] == 'HUMAN' and not values_raw[ref_chain + 'C']:
+                            if chain == 'TRA':
+                                mouse_c = ('TRAC*00', 'gacattcagaacccggaaccggctgtataccagctgaaggacccccgatctcaggatagtactctgtgcctgttcaccgactttgatagtcagatcaatgtgcctaaaaccatggaatccggaacttttattaccgacaagtgcgtgctggatatgaaagccatggacagtaagtcaaacggcgccatcgcttggagcaatcagacatccttcacttgccaggatatcttcaaggagaccaacgcaacatacccatcctctgacgtgccctgtgatgccaccctgacagagaagtctttcgaaacagacatgaacctgaattttcagaatctgagcgtgatgggcctgagaatcctgctgctgaaggtcgctgggtttaatctgctgatgacactgcggctgtggtcctca'.upper())
+                            elif chain == 'TRB':
+                                mouse_c = ('TRBC*00', 'gaagatctacgtaacgtgacaccacccaaagtctcactgtttgagcctagcaaggcagaaattgccaacaagcagaaggccaccctggtgtgcctggcaagagggttctttccagatcacgtggagctgtcctggtgggtcaacggcaaagaagtgcattctggggtctgcaccgacccccaggcttacaaggagagtaattactcatattgtctgtcaagccggctgagagtgtccgccacattctggcacaaccctaggaatcatttccgctgccaggtccagtttcacggcctgagtgaggaagataaatggccagaggggtcacctaagccagtgacacagaacatcagcgcagaagcctggggacgagcagactgtggcattactagcgcctcctatcatcagggcgtgctgagcgccactatcctgtacgagattctgctgggaaaggccaccctgtatgctgtgctggtctccggcctggtgctgatggccatggtcaagaaaaagaactct'.upper())
+
+                        self.outputs[ref_chain + '_out_list'], \
+                        self.outputs[ref_chain + '_stitched'], \
+                        self.outputs[ref_chain + '_offset'], region, check = st.stitch(
+                            tcr_bits, tcr_dat, functionality, partial, codons, 3, preferred, mouse_c, frame_dat, restriction)
+
+                        self.outputs[ref_chain + '_out_str'] = '|'.join(self.outputs[ref_chain + '_out_list'])
+                        self.outputs[ref_chain + '_fasta'] = fxn.fastafy(
+                            'nt|' + self.outputs[ref_chain + '_out_str'],
+                            self.outputs[ref_chain + '_stitched'])
+                        self._set(ref_chain + '_out', self.outputs[ref_chain + '_fasta'])
+
+                        if not values['chk_linker']:
+                            seq = fxn.translate_nt(self.outputs[ref_chain + '_stitched'])
+                            check_seq = seq[len(seq) - 3] if restriction else seq[len(seq) - 1]
+                            if check_seq != '*':
+                                check.append("Warning: Stop codon expected, but not found at end of sequence.")
+                            else:
+                                check.append("Check: Stop codon successfully located.")
+
+                        parts.append(region)
+                        warning_msgs[ref_chain + '_out'] = '\n'.join([str(check[x]) for x in range(len(check))])
+
+                    except Exception as message:
+                        warning_msgs[ref_chain + '_out'] = str(message)
+
+                elif values[ref_chain + 'V'] or values[ref_chain + 'J'] or values[ref_chain + '_CDR3']:
+                    warnings.warn('V gene, J gene, and CDR3 sequence are all required to stitch a TCR chain.')
+
+            warning_msgs[ref_chain + '_out'] += '\n'.join([
+                str(chain_log[x].message) for x in range(len(chain_log))
+                if 'DeprecationWarning' not in str(chain_log[x].category)
+            ])
+
+            if not values['chk_linker']:
+                self.widgets[ref_chain + '_Highlight'].setEnabled(True)
+            self._set(ref_chain + '_log', warning_msgs[ref_chain + '_out'])
+
+        # Link chains if requested
+        if values['chk_linker']:
+            with warnings.catch_warnings(record=True) as link_log:
+                warnings.simplefilter("always")
+                try:
+                    if 'TR1_out_str' in self.outputs and 'TR2_out_str' in self.outputs:
+                        link_order = values['link_order_choice']
+                        if link_order in ('BA', 'DG'):
+                            tr1, tr2 = '2', '1'
+                        elif link_order in ('AB', 'GD'):
+                            tr1, tr2 = '1', '2'
+                        else:
+                            raise warnings.warn("Undetermined link order.")
+
+                        self.outputs['linker'] = values['linker_choice']
+                        if self.outputs['linker'] == 'Custom':
+                            custom = values['custom_linker']
+                            if custom:
+                                self.linkers['Custom'] = custom
+                            else:
+                                self._set('linked_log',
+                                          "Cannot output linked sequence: custom linker chosen, but not provided")
+
+                        self.outputs['linker_seq'] = fxn.get_linker_seq(self.outputs['linker'], self.linkers)
+                        self.outputs['linked'] = (Seq_5 +
+                                                  self.outputs['TR' + tr1 + '_stitched'] +
+                                                  self.outputs['linker_seq'] +
+                                                  self.outputs['TR' + tr2 + '_stitched'] +
+                                                  Seq_3)
+                        self.outputs['linked_header'] = '_'.join([
+                            self.outputs['TR' + tr1 + '_out_str'],
+                            self.outputs['linker'],
+                            self.outputs['TR' + tr2 + '_out_str'],
+                        ])
+                        self.outputs['linked_fasta'] = fxn.fastafy(
+                            self.outputs['linked_header'], self.outputs['linked'])
+                        self._set('linked_out', self.outputs['linked_fasta'])
+
+                        seq = fxn.translate_nt(self.outputs['linked'])
+                        check_seq = seq[len(seq) - 3] if values['chk_restriction'] else seq[len(seq) - 1]
+                        if check_seq != '*':
+                            warning_msgs['linked_out'] += "Warning: Stop codon expected, but not found at end of sequence."
+                        else:
+                            warning_msgs['linked_out'] += "Check: Stop codon successfully located."
+
+                    else:
+                        raise warnings.warn("Two valid chains required for linking.")
+
+                except Exception as message:
+                    warning_msgs['linked_out'] += str(message)
+
+            warning_msgs['linked_out'] += ''.join([
+                str(link_log[x].message) for x in range(len(link_log))
+                if 'DeprecationWarning' not in str(link_log[x].category)
+            ])
+
+            if warning_msgs['linked_out']:
+                self._set('linked_log', warning_msgs['linked_out'])
+
+            if not seamless and 'linked' in self.outputs:
+                sd.display(self.outputs['linked'], parts, fxn.translate_nt(self.outputs['linker_seq']), True)
+
+        self.widgets['Run Stitchr'].setEnabled(True)
+
+    def _on_export_output(self):
+        if not self.outputs:
+            return
+        out_str = ''
+        for chain in ['TR1', 'TR2']:
+            if chain + '_fasta' in self.outputs:
+                out_str += self.outputs[chain + '_fasta']
+
+        values = self._gather_values()
+        if values['chk_linker'] and ('TR1_out_str' in self.outputs and 'TR2_out_str' in self.outputs):
+            out_str += self.outputs['linked_fasta']
+
+        if not out_str:
+            return
+
+        out_file, _ = QFileDialog.getSaveFileName(
+            self, 'Export output', '', 'FASTA files (*.fasta)')
+        if out_file:
+            with open(out_file, 'w') as f:
+                f.write(out_str)
+
+    def _on_tr1_highlight(self):
+        if 'TR1_stitched' in self.outputs:
+            sd.display(self.outputs['TR1_stitched'], self.outputs.get('parts', []), "")
+        self.widgets['TR1_Highlight'].setEnabled(False)
+
+    def _on_tr2_highlight(self):
+        if 'TR2_stitched' in self.outputs:
+            sd.display(self.outputs['TR2_stitched'], self.outputs.get('parts', []), "")
+        self.widgets['TR2_Highlight'].setEnabled(False)
 
 
 def main():
-
-    # Define needed/starting variables
-    extra_gene_text = ">TCRgenename*01\nATG\n"
-    box_width = 70
-    sz = (int(box_width * 0.9), 1)
-    half_sz = (int(box_width * 0.44), 1)  # For half a column
-    third_sz = (int(box_width / 3 - 1.3), 1)  # For one third of a column
-    quart_sz = (int(box_width / 4 - 1.1), 1)  # For one quarter of a column
-    out_box_font = ('Courier New', 10)
-    fnt = 'Arial'
-
-    global linkers
-    linkers = fxn.get_linker_dict()
-    global link_choices
-    link_choices = list(linkers.keys()) + ['Custom']
-
-    species_list = fxn.find_species_covered()
-
-    receptor = 'TRA/TRB'  # Start off with a/b TCRs are the format in use
-    receptor_list = ['TRA/TRB', 'TRG/TRD']
-
-    global link_orders
-    link_orders = {'TRA/TRB': ['AB', 'BA'],
-                   'TRG/TRD': ['GD', 'DG']}
-
-    examples_path = fxn.gui_examples_dir
-    preferred = ''
-    preferred_button_default = 'Preferred allele file'
-
-    # General interface column
-    col1 = [
-
-        [sg.Button('Example data', size=quart_sz), sg.Button('Reset form', size=quart_sz)],
-
-        [sg.FileBrowse(key="uploaded_tcr", size=quart_sz, button_text='Find TCR input file'),
-         sg.Button("Upload TCR details", size=quart_sz)],
-
-        [sg.Text('Species', size=half_sz, font=(fnt, 12))],
-        [sg.Combo(species_list, key='species_choice', default_value='HUMAN', size=half_sz, enable_events=True)],
-
-        [sg.Button(key='change_receptor', size=half_sz, enable_events=True, button_text='Change to TRG/TRD')],
-
-        [sg.Text('Additional genes', size=half_sz, font=(fnt, 12))],
-        [sg.MLine(default_text=extra_gene_text, size=(int(box_width / 2 - 1.3), 3), key='additional_genes')],
-
-        [sg.Input(key='find_preferred_alleles', enable_events=True, visible=False)],
-        [sg.FileBrowse(target='find_preferred_alleles', size=half_sz,
-                       key='preferred_allele_button', button_text=preferred_button_default)],
-
-        [sg.Checkbox('Link chains', key='chk_linker', enable_events=True, size=quart_sz, font=(fnt, 12)),
-         sg.Combo(link_choices, key='linker_choice', default_value=link_choices[0], size=quart_sz, enable_events=True)],
-
-        [sg.InputText('', key='custom_linker', visible=False, size=third_sz)],
-
-        [sg.Text('Link order', size=quart_sz, font=(fnt, 12), justification='c'),
-         sg.Combo(link_orders[receptor], key='link_order_choice', default_value=link_orders[receptor][1],
-                  size=(8, 1), enable_events=True)],
-
-        [sg.Checkbox('CDR3 flanking nucleotides (20)', key='chk_seamless', enable_events=True, font=(fnt, 12))],
-        [sg.Checkbox('Add Restriction Sites (BamHI, SalI)', key='chk_restriction', enable_events=True, font=(fnt, 12))],
-
-        [sg.Button('Run Stitchr', size=(int(box_width / 4), 2), font=(fnt, 20))],
-
-        [sg.InputText(key='Export output', do_not_clear=False, enable_events=True, visible=False,
-                      size=quart_sz),
-         sg.FileSaveAs(file_types=(("FASTA files", "*.fasta"),), default_extension='.fasta',
-                       size=quart_sz, button_text='Export output'), sg.Button('Exit', size=quart_sz)],
-
-        [sg.Text('Linked out', key='linked_out_text')],
-        [sg.MLine(default_text='', size=(int(box_width / 2), 10), key='linked_out', font=out_box_font)],
-
-        [sg.Text('Linked log', key='linked_log_text')],
-        [sg.MLine(default_text='', size=(int(box_width / 2), 5), key='linked_log', font=out_box_font)],
-    ]
-
-    # Alpha/gamma column
-    col2 = [
-
-        [sg.Text('Alpha chain TCR', font=(fnt, 16), key='TR1_title_text')],
-
-        [sg.Text('TRAV gene name*', key='TR1_V_text')], [sg.InputText('', key='TR1V', size=sz)],
-
-        [sg.Text('TRAJ gene name*', key='TR1_J_text')], [sg.InputText('', key='TR1J', size=sz)],
-
-        [sg.Text('TRA CDR3 junction* (nt/aa)', key='TR1_CDR3_text')], [sg.InputText('', key='TR1_CDR3', size=sz)],
-
-        [sg.Text('TRA arbitrary name', key='TR1_name_text')], [sg.InputText('', key='TR1_name', size=sz)],
-
-        [sg.Text('TRA alternative leader', size=half_sz, key='TR1_l_title_text'), sg.Text('TRAC gene name', size=half_sz, key='TR1_c_title_text')],
-
-        [sg.InputText('', key='TR1_leader', size=half_sz), sg.InputText('', key='TR1C', size=half_sz)],
-
-        [sg.Text('5\' chain append', size=half_sz), sg.Text('3\' chain append')],
-        [sg.InputText('', key='TR1_5_prime_seq', size=half_sz),
-         sg.InputText('', key='TR1_3_prime_seq', size=half_sz)],
-
-        [sg.Text('TRA out', key='TR1_out_title_text'), sg.Button("Highlight", size=quart_sz, disabled=True, key="TR1_Highlight")],
-        [sg.MLine(default_text='', size=(box_width - 9, 20), key='TR1_out', font=out_box_font)],
-
-        [sg.Text('TRA log', key='TR1_log_title_text')],
-        [sg.MLine(default_text='', size=(box_width - 9, 5), key='TR1_log', font=out_box_font)]
-
-    ]
-
-    # Beta/delta column
-    col3 = [
-
-        [sg.Text('Beta chain TCR', font=(fnt, 16), key='TR2_title_text')],
-
-        [sg.Text('TRBV gene name*', key='TR2_V_text')], [sg.InputText('', key='TR2V', size=sz)],
-
-        [sg.Text('TRBJ gene name*', key='TR2_J_text')], [sg.InputText('', key='TR2J', size=sz)],
-
-        [sg.Text('TRB CDR3 junction* (nt/aa)', key='TR2_CDR3_text')], [sg.InputText('', key='TR2_CDR3', size=sz)],
-
-        [sg.Text('TRB arbitrary name', key='TR2_name_text')], [sg.InputText('', key='TR2_name', size=sz)],
-
-        [sg.Text('TRB alternative leader', size=half_sz, key='TR2_l_title_text'), sg.Text('TRBC gene name', key='TR2_c_title_text', size=half_sz)],
-
-        [sg.InputText('', key='TR2_leader', size=half_sz), sg.InputText('', key='TR2C', size=half_sz)],
-
-        [sg.Text('5\' chain append', size=half_sz), sg.Text('3\' chain append')],
-
-        [sg.InputText('', key='TR2_5_prime_seq', size=half_sz),
-         sg.InputText('', key='TR2_3_prime_seq', size=half_sz)],
-
-        [sg.Text('TRB out', key='TR2_out_title_text'), sg.Button("Highlight", size=quart_sz, disabled=True, key="TR2_Highlight")],
-        [sg.MLine(default_text='', size=(box_width - 9, 20), key='TR2_out', font=out_box_font)],
-
-        [sg.Text('TRB log', key='TR2_log_title_text')],
-        [sg.MLine(default_text='', size=(box_width - 9, 5), key='TR2_log', font=out_box_font)]
-
-    ]
-
-    layout = [[sg.Column(col1, element_justification='c'),
-               sg.Column(col2, element_justification='l'),
-               sg.Column(col3, element_justification='l')]]
-
-    global window
-    window = sg.Window("stitchr", layout, finalize=True)
-
-    window.bind('<Escape>', 'Exit')
-
-    fields_to_reset = [
-        'TR1V', 'TR1J', 'TR1_CDR3', 'TR1_name', 'TR1_leader', 'TR1C', 'TR1_5_prime_seq', 'TR1_3_prime_seq', 'TR1_out',
-        'TR2V', 'TR2J', 'TR2_CDR3', 'TR2_name', 'TR2_leader', 'TR2C', 'TR2_5_prime_seq', 'TR2_3_prime_seq', 'TR2_out']
-
-    convert_chains = {'TRA/TRB': {'TR1': 'TRA', 'TR2': 'TRB'},
-                      'TRG/TRD': {'TR1': 'TRG', 'TR2': 'TRD'}}
-
-    while True:
-        event, values = window.read()
-        values_raw = values
-
-        # Prevent TypeError when closing via GUI 'X' button
-        if event == sg.WINDOW_CLOSED:
-            break
-
-        # Determine species
-        species = values['species_choice']
-
-        if event == 'Example data':
-
-            example_files = [x for x in os.listdir(examples_path) if x.endswith('tsv') and x[0] not in ['.', '~', '_']]
-            example_matches = [x for x in example_files if species in x.upper() and receptor.replace('/', '-') in x]
-
-            if len(example_matches) == 0:
-                sg.Popup('No example ' + receptor + ' TCR example files available for species ' + species + '.')
-
-            else:
-                if len(example_matches) > 1:
-                    sg.Popup('More than one ' + receptor + 'TCR example files available for species ' + species + ':\n'
-                             'using the first alphabetically.')
-                    example_matches.sort()
-
-                receptor, species = upload_tcr_details(os.path.join(examples_path, example_matches[0]),
-                                                       receptor, species)
-            window['TR2_Highlight'].update(disabled=True)
-            window['TR1_Highlight'].update(disabled=True)
-
-        elif event == 'change_receptor':
-
-            receptor = change_receptors(receptor)
-
-        elif event == 'Reset form':
-
-            window['species_choice'].update('HUMAN')
-            species = 'HUMAN'
-            for field in fields_to_reset:
-                window[field].update('')
-
-            for field in ['linked_out', 'linked_out_text',
-                          'linked_log', 'linked_log_text',
-                          'TR1_log', 'TR1_log_text',
-                          'TR2_log', 'TR2_log_text']:
-                if field.endswith('log') or field.endswith('out'):
-                    window[field].update('')
-
-            outputs = coll.defaultdict()
-            window['link_order_choice'].update(values=link_orders[receptor], value=link_orders[receptor][1])
-            window['additional_genes'].update(extra_gene_text)
-
-            # Reset preferred alleles
-            values['find_preferred_alleles'] = ''
-            window['preferred_allele_button'].update(preferred_button_default)
-            window['TR2_Highlight'].update(disabled=True)
-            window['TR1_Highlight'].update(disabled=True)
-
-        elif event == 'Upload TCR details':
-
-            receptor, species = upload_tcr_details(values['uploaded_tcr'], receptor, species)
-
-        elif event == 'find_preferred_alleles':
-
-            preferred_file = values['find_preferred_alleles']
-            window['preferred_allele_button'].update(os.path.basename(preferred_file))
-
-        elif event == 'Run Stitchr':
-            warning_msgs = coll.defaultdict(str)
-
-            window['linked_out'].update('')
-            window['linked_log'].update('')
-
-            # Disable stitchr button while code is running
-            window['Run Stitchr'].update(disabled=True)
-
-            # Loop through both chains, determine which are asked for, and read data in
-            codons = fxn.get_optimal_codons('', species)
-            outputs = coll.defaultdict()
-
-            # If additional genes provided, read in and run rudimentary checks
-            if values['additional_genes'] != extra_gene_text + '\n':
-                outputs['additional_fastas_raw'] = [x for x in read_fasta_box(
-                    values['additional_genes'].split('\n') + ['>\n'])][:-1]
-
-                # Check no redundant gene names
-                if len(list(set([x[0] for x in outputs['additional_fastas_raw']]))) != \
-                        len(outputs['additional_fastas_raw']):
-                    window['additional_genes'].update("Multiple FASTAs detected with the same identifier name.\n"
-                                                      "Additional genes ignored; correct and retry")
-
-                # Check they all have allele numbers to match the expected gene name format
-                outputs['additional_fastas'] = []
-                for extra_gene in outputs['additional_fastas_raw']:
-
-                    extra_gene = ([x.upper() for x in extra_gene])
-
-                    if '*' in extra_gene[0]:
-                        outputs['additional_fastas'].append(extra_gene)
-                    else:
-                        outputs['additional_fastas'].append((extra_gene[0] + '*01', extra_gene[1]))
-
-                    # Also throw in an alert if non-DNA characters used
-                    if not fxn.dna_check(extra_gene[1]):
-                        if fxn.dna_check(extra_gene[1]) != extra_gene_text:
-                            warnings.warn("Warning: user-provided gene " + extra_gene[0] +
-                                          " contains non-DNA sequences.")
-
-            # Check if seamless stitching selected
-            if values['chk_seamless']:
-                seamless = True
-            else:
-                seamless = False
-
-            parts = []  # Used to store parts of sequence handed off to seq_display
-            Seq_5 = ""
-            Seq_3 = ""
-            restriction = False
-            # Check if restrictions selected
-            if values['chk_restriction']:
-                if values['chk_linker']:
-                    Seq_5 = "GGATCC" # BamHI sequence
-                    Seq_3 = "GTCGAC" # SalI sequence
-                else:
-                    # If product is 'unlinked' used to tell stitchr.py to add sites for individual TCRs before returning
-                    restriction = True
-
-            # Then stitch each individual chain...
-            for ref_chain in ['TR1', 'TR2']:
-                chain = convert_chains[receptor][ref_chain]
-
-                window[ref_chain + '_out'].update('')
-                window[ref_chain + '_log'].update('')
-
-                with warnings.catch_warnings(record=True) as chain_log:
-                    warnings.simplefilter("always")
-
-                    if values[ref_chain + 'V'] and values[ref_chain + 'J'] and values[ref_chain + '_CDR3']:
-
-                        values = tidy_values(ref_chain, values)
-
-                        try:
-                            tcr_dat, functionality, partial, frame_dat = fxn.get_imgt_data(chain, st.gene_types, species)
-
-                            # If additional genes provided, just add them to all possible gene segment types
-                            if values['additional_genes'] != extra_gene_text + '\n':
-                                for extra_gene in outputs['additional_fastas']:
-                                    gene, allele = extra_gene[0].split('*')
-
-                                    for gene_type in tcr_dat.keys():
-
-                                        if gene not in tcr_dat[gene_type]:
-                                            tcr_dat[gene_type][gene] = coll.defaultdict(list)
-
-                                        if allele in tcr_dat[gene_type][gene]:
-                                            raise warnings.warn("User provided gene/allele combination " +
-                                                                extra_gene[0] + " already exists in TCR germline data. "
-                                                                                "Please change and try.")
-                                        else:
-                                            tcr_dat[gene_type][gene][allele] = extra_gene[1].upper()
-                                            functionality[gene][allele] = '?'
-
-                            if values['find_preferred_alleles']:
-                                preferred = fxn.get_preferred_alleles(values['find_preferred_alleles'],
-                                                                      list(fxn.regions.values()), tcr_dat,
-                                                                      partial, chain)
-                            else:
-                                preferred = ''
-
-                            tcr_bits = {'v': values[ref_chain + 'V'], 'j': values[ref_chain + 'J'],
-                                        'cdr3': values[ref_chain + '_CDR3'],
-                                        'skip_c_checks': False, 'species': species, 'seamless': seamless,
-                                        'name': values[ref_chain + '_name'].replace(' ', '_'),
-                                        'l': values[ref_chain + '_leader'], 'c': values[ref_chain + 'C'],
-                                        '5_prime_seq': values[ref_chain + '_5_prime_seq'],
-                                        '3_prime_seq': values[ref_chain + '_3_prime_seq']}
-
-                            # Can't do C checks if user providing genes, as it may be a C
-                            if values['additional_genes'] != extra_gene_text + '\n':
-                                tcr_bits['skip_c_checks'] = True
-
-                            tcr_bits = fxn.autofill_input(tcr_bits, chain)
-
-                            # Determine if we'll use default mouse constant region (for human alpha-beta)
-                            mouse_c = ''
-                            if species == 'HUMAN' and not values_raw[ref_chain + 'C']:
-                                if chain == 'TRA':
-                                    mouse_c = ('TRAC*00', 'gacattcagaacccggaaccggctgtataccagctgaaggacccccgatctcaggatagtactctgtgcctgttcaccgactttgatagtcagatcaatgtgcctaaaaccatggaatccggaacttttattaccgacaagtgcgtgctggatatgaaagccatggacagtaagtcaaacggcgccatcgcttggagcaatcagacatccttcacttgccaggatatcttcaaggagaccaacgcaacatacccatcctctgacgtgccctgtgatgccaccctgacagagaagtctttcgaaacagacatgaacctgaattttcagaatctgagcgtgatgggcctgagaatcctgctgctgaaggtcgctgggtttaatctgctgatgacactgcggctgtggtcctca'.upper())
-                                elif chain == 'TRB':
-                                    mouse_c = ('TRBC*00', 'gaagatctacgtaacgtgacaccacccaaagtctcactgtttgagcctagcaaggcagaaattgccaacaagcagaaggccaccctggtgtgcctggcaagagggttctttccagatcacgtggagctgtcctggtgggtcaacggcaaagaagtgcattctggggtctgcaccgacccccaggcttacaaggagagtaattactcatattgtctgtcaagccggctgagagtgtccgccacattctggcacaaccctaggaatcatttccgctgccaggtccagtttcacggcctgagtgaggaagataaatggccagaggggtcacctaagccagtgacacagaacatcagcgcagaagcctggggacgagcagactgtggcattactagcgcctcctatcatcagggcgtgctgagcgccactatcctgtacgagattctgctgggaaaggccaccctgtatgctgtgctggtctccggcctggtgctgatggccatggtcaagaaaaagaactct'.upper())
-                                else:
-                                    mouse_c = ''
-
-                            # Run the stitching
-                            outputs[ref_chain + '_out_list'], \
-                            outputs[ref_chain + '_stitched'], \
-                            outputs[ref_chain + '_offset'], region, check = st.stitch(tcr_bits, tcr_dat, functionality,
-                                                                       partial, codons, 3, preferred, mouse_c, frame_dat, restriction)
-                            outputs[ref_chain + '_out_str'] = '|'.join(outputs[ref_chain + '_out_list'])
-                            outputs[ref_chain + '_fasta'] = fxn.fastafy('nt|' + outputs[ref_chain + '_out_str'],
-                                                                        outputs[ref_chain + '_stitched'])
-                            window[ref_chain + '_out'].update(outputs[ref_chain + '_fasta'])
-
-                            # Check for Stop Codons
-                            if not values['chk_linker']:
-                                seq = fxn.translate_nt(outputs[ref_chain+'_stitched'])
-                                if restriction == True:
-                                    seq = seq[len(seq)-3]
-                                else:
-                                    seq = seq[len(seq)-1]
-                                if seq != '*':
-                                    check.append("Warning: Stop codon expected, but not found at end of sequence.")
-                                else:
-                                    check.append("Check: Stop codon successfully located.")
-
-                            parts.append(region)
-                            warning_msgs[ref_chain+'_out'] = '\n'.join([str(check[x]) for x in range(len(check))])
-                        except Exception as message:
-                            warning_msgs[ref_chain + '_out'] = str(message)
-
-                    elif values[ref_chain + 'V'] or values[ref_chain + 'J'] or values[ref_chain + '_CDR3']:
-                        warnings.warn('V gene, J gene, and CDR3 sequence are all required to stitch a TCR chain.')
-
-                warning_msgs[ref_chain + '_out'] += '\n'.join([str(chain_log[x].message) for x in range(len(chain_log))
-                                                        if 'DeprecationWarning' not in str(chain_log[x].category)])
-                if not values['chk_linker']:
-                    window[ref_chain+'_Highlight'].update(disabled=False)
-                window[ref_chain + '_log'].update(warning_msgs[ref_chain + '_out'])
-
-            # ... and if asked for, link together
-            if values['chk_linker']:
-
-                with warnings.catch_warnings(record=True) as link_log:
-                    warnings.simplefilter("always")
-
-                    # Only link if both chains present
-                    try:
-                        if 'TR1_out_str' in outputs and 'TR2_out_str' in outputs:
-
-                            # Determine order
-                            if values['link_order_choice'] == 'BA' or values['link_order_choice'] == 'DG':
-                                tr1, tr2 = '2', '1'
-                            elif values['link_order_choice'] == 'AB' or values['link_order_choice'] == 'GD':
-                                tr1, tr2 = '1', '2'
-                            else:
-                                raise warnings.warn("Undetermined link order.")
-
-                            # Stick together, first verifying linker
-                            outputs['linker'] = values['linker_choice']
-                            if outputs['linker'] == 'Custom':
-                                if values['custom_linker']:
-                                    linkers['Custom'] = values['custom_linker']
-                                else:
-                                    window['linked_log'].update("Cannot output linked sequence: custom linker chosen, "
-                                                                "but not provided")
-
-                            outputs['linker_seq'] = fxn.get_linker_seq(outputs['linker'], linkers)
-                            outputs['linked'] = Seq_5 + outputs['TR' + tr1 + '_stitched'] + \
-                                                outputs['linker_seq'] + \
-                                                outputs['TR' + tr2 + '_stitched'] + Seq_3
-
-                            outputs['linked_header'] = '_'.join([outputs['TR' + tr1 + '_out_str'],
-                                                                 outputs['linker'],
-                                                                 outputs['TR' + tr2 + '_out_str']])
-
-                            outputs['linked_fasta'] = fxn.fastafy(outputs['linked_header'], outputs['linked'])
-
-                            window['linked_out'].update(outputs['linked_fasta'])
-
-                            #Check for Stop Codon
-                            seq = fxn.translate_nt(outputs['linked'])
-                            if values['chk_restriction']:
-                                seq = seq[len(seq)-3]
-                            else:
-                                seq = seq[len(seq)-1]
-                            if seq != '*':
-                                warning_msgs['linked_out'] += "Warning: Stop codon expected, but not found at end of sequence."
-                            else:
-                                warning_msgs['linked_out'] += "Check: Stop codon successfully located."
-                        else:
-                            raise warnings.warn("Two valid chains required for linking.")
-                    except Exception as message:
-                        warning_msgs['linked_out'] += str(message)
-
-                warning_msgs['linked_out'] += ''.join([str(link_log[x].message) for x in range(len(link_log))
-                                                       if 'DeprecationWarning' not in str(link_log[x].category)])
-
-                if warning_msgs['linked_out']:
-                    window['linked_log'].update(warning_msgs['linked_out'])
-
-                if seamless == False:
-                    sd.display(outputs['linked'], parts, fxn.translate_nt(outputs['linker_seq']), True)
-            # Re-enable stitchr button once completed
-            window['Run Stitchr'].update(disabled=False)
-
-        elif event == 'TR1_Highlight':
-            sd.display(outputs['TR1_stitched'], parts, "")
-            window['TR1_Highlight'].update(disabled=True)
-
-        elif event == 'TR2_Highlight':
-            sd.display(outputs['TR2_stitched'], parts, "")
-            window['TR2_Highlight'].update(disabled=True)
-
-        elif event == 'Export output':
-
-            # Only need to bother saving something if there's a stitched TCR to save
-            if 'outputs' in dir():
-                if len(outputs) > 0:
-                    out_str = ''
-                    for chain in ['TR1', 'TR2']:
-                        if chain + '_fasta' in outputs:
-                            out_str += outputs[chain + '_fasta']
-
-                    if values['chk_linker'] and ('TR1_out_str' in outputs and 'TR2_out_str' in outputs):
-                        out_str += outputs['linked_fasta']
-
-                    out_file = values['Export output']
-                    if out_file:
-                        with open(out_file, 'w') as out_file:
-                            out_file.write(out_str)
-
-        elif event == 'linker_choice':
-
-            window['chk_linker'].update(value=True)
-
-            if values['linker_choice'] == 'Custom':
-                window['custom_linker'].update(visible=True)
-            else:
-                window['custom_linker'].update(visible=False)
-
-        elif event in ('Exit', None):
-            break
-
-    window.close()
-# TODO output a file of warnings?
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication(sys.argv)
+    window = StitchrWindow()
+    window.show()
+    sys.exit(app.exec())
