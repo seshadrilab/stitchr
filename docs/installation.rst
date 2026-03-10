@@ -4,29 +4,30 @@ Getting started
 Installation
 ------------
 
-``stitchr`` runs on Python3, and can be installed via ``pip``:
+``stitchr`` runs on Python 3.9+ and installation requires pip. Activate a virtual environment with these available if you have one, then clone the repository into wherever you keep your GitHub repos and install:
 
-``pip install stitchr``
+.. code:: bash
 
-In order to automatically download the necessary data for stitching, `IMGTgeneDL <https://github.com/JamieHeather/IMGTgeneDL>`_ is also required. If it's not automatically installed alongside ``stitchr``, it can be installed with:
+   $ git clone https://github.com/seshadrilab/stitchr.git
+   $ cd stitchr
+   $ pip install .
 
-``pip install IMGTgeneDL``
+This will install all required dependencies, including ``IMGTgeneDL``, ``biopython``, and ``PySide6`` (for the GUI).
 
-After installing ``stitchr`` via ``pip``, ``IMGTgeneDL`` can be used via the ``stitchrdl`` command to download suitably formatted data sets to the required directory like so:
+``IMGTgeneDL`` can be used via the ``stitchrdl`` command to download suitably formatted data sets to the required directory like so:
 
 ``stitchrdl -s human``
 
 See the :ref:`species-covered-label` section for details on the species for which data can be downloaded in this manner.
 
-There are also some optional functions that require additional dependencies:
+Running GUI-stitchr
+^^^^^^^^^^^^^^^^^^^
 
-* The ``-aa`` alignment function of ``stitchr`` requires Biopython
+After installation, launch the graphical interface with:
 
-    * ``pip install Bio``
+.. code:: bash
 
-* The graphical user interface version :ref:`gui-label` requires ``PySide6``
-
-    * ``pip install PySide6``
+   $ gui_stitchr
 
 Quick start example
 -------------------
