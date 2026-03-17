@@ -6,19 +6,28 @@
 
 [The documentation for stitchr can be accessed at this link: https://jamieheather.github.io/stitchr/](https://jamieheather.github.io/stitchr/)
 
-> **Note:** This fork replaces PySimpleGUI with [PySide6](https://pypi.org/project/PySide6/) in the GUI components. See [issue #50](https://github.com/JamieHeather/stitchr/issues/50) for context.
-
 ## Installation
 
-Requires Python 3.9+ and pip. Activate a virtual environment with these available if you have one, then clone this repository into wherever you keep your GitHub repos and install:
+It's best to install into a virtual environment (such as conda, uv, or venv) that has pip and Python already installed.
+
+1. Clone this (forked) repository
 
 ```bash
 $ git clone https://github.com/seshadrilab/stitchr.git
+```
+
+
+2. Move into the repository folder and install:
+
+
+```bash
 $ cd stitchr
 $ pip install .
 ```
 
-## Running the GUI
+## Running the Graphical User Interface (GUI)
+
+With the environment activated, run this command from anywhere:
 
 ```bash
 $ gui_stitchr
