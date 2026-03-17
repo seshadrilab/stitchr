@@ -10,7 +10,7 @@ A graphical interface has been developed for users that are less comfortable at 
 
    gui_stitchr
 
-This will launch the `PySimpleGUI <https://www.pysimplegui.org/en/latest/>`_-powered interface that replicates the core functionality of ``stitchr``, with some of the additional capabilities of ``thimble`` - specifically the ability to generate bicistronic paired TCR sequences.
+This will launch the `PySide6 <https://pypi.org/project/PySide6/>`_-powered interface that replicates the core functionality of ``stitchr``, with some of the additional capabilities of ``thimble`` - specifically the ability to generate bicistronic paired TCR sequences.
 
 The fields and buttons of the interface are shown in the following image. Note that as with regular ``stitchr``, ``gui-stitchr`` requires a V, J, and CDR3 junction sequence as a minimum to produce a sequence for either chain. Furthermore, as with ``thimble``, it can only link chains for a single TCR if both independent chains are successfully stitchable.
 
